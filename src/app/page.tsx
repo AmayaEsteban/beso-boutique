@@ -1,103 +1,74 @@
-import Image from "next/image";
-
+// src/app/page.tsx
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <section className="grid gap-8">
+      <div className="panel shadow-card p-6">
+        <h1 className="mb-2 text-2xl font-bold">Catálogo — Demo estilos</h1>
+        <p className="muted">
+          Estos componentes usan las clases globales de BESO.
+        </p>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Botones */}
+      <div className="panel shadow-card p-6">
+        <h2 className="mb-4 text-xl font-semibold">Botones</h2>
+        <div className="flex flex-wrap gap-3">
+          <button className="btn btn--primary">Primario</button>
+          <button className="btn btn--secondary">Secundario</button>
+          <button className="btn btn--neutral">Neutro</button>
+          <button className="btn btn--success">Éxito</button>
+          <button className="btn btn--danger">Peligro</button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+
+      {/* Inputs */}
+      <div className="panel shadow-card p-6">
+        <h2 className="mb-4 text-xl font-semibold">Formulario</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="muted text-sm">Nombre del producto</label>
+            <input className="input mt-1" placeholder="Vestido Rojo" />
+          </div>
+          <div>
+            <label className="muted text-sm">Precio (Q)</label>
+            <input type="number" className="input mt-1" placeholder="349.99" />
+          </div>
+          <div>
+            <label className="muted text-sm">Categoría</label>
+            <select className="select mt-1">
+              <option>Vestidos</option>
+              <option>Blusas</option>
+              <option>Pantalones</option>
+            </select>
+          </div>
+          <div>
+            <label className="muted text-sm">Descripción</label>
+            <textarea
+              className="textarea mt-1"
+              rows={3}
+              placeholder="Detalles del producto..."
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex gap-3">
+          <button className="btn btn--primary">Guardar</button>
+          <button className="btn btn--neutral">Limpiar</button>
+        </div>
+      </div>
+
+      {/* Alertas */}
+      <div className="panel shadow-card p-6">
+        <h2 className="mb-4 text-xl font-semibold">Alertas</h2>
+        <div className="grid gap-3">
+          <div className="alert alert--success">
+            Éxito: operación realizada correctamente.
+          </div>
+          <div className="alert alert--warning">
+            Aviso: revisa los campos resaltados.
+          </div>
+          <div className="alert alert--error">Error: no se pudo guardar.</div>
+        </div>
+      </div>
+    </section>
   );
 }

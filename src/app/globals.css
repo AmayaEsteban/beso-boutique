@@ -1,26 +1,1070 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+/* =========================================================
+   BESO · global.css
+   - Tokens de color y tema (claro/oscuro)
+   - Estilos base (body, tipografía, enlaces)
+   - Componentes reutilizables: botón, input, panel, tabla,
+     card, modal, alertas, chips.
+   - Utilidades ligeras (soft-border, shadow-card, etc.)
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   1) TOKENS (modo CLARO por defecto)
+   --------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Marca */
+  --beso-primary: #b24c5a; /* rosa labial */
+  --beso-primary-600: #9f4451;
+
+  /* Tipografía y superficies */
+  --ink: #1f1f1f; /* texto principal */
+  --muted: #6b7280; /* texto secundario */
+  --surface: #f7f7f7; /* fondo global */
+  --panel: #ffffff; /* tarjetas/paneles */
+  --panel-input: #ffffff; /* fondo de inputs */
+  --stroke: #e6e6ea; /* bordes/ separadores */
+  --placeholder: #9ca3af; /* placeholder legible */
+
+  /* Estados base */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #dc2626;
+
+  /* Paletas de alertas (CLARO) */
+  --alert-success-bg: #ecfdf5;
+  --alert-success-border: #dcfce7;
+  --alert-success-text: #065f46;
+
+  --alert-warning-bg: #fffbeb;
+  --alert-warning-border: #fef3c7;
+  --alert-warning-text: #92400e;
+
+  --alert-error-bg: #fef2f2;
+  --alert-error-border: #fecaca;
+  --alert-error-text: #991b1b;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ---------------------------------------------------------
+   2) TOKENS (modo OSCURO)
+   - Se activa añadiendo data-theme="dark" al <html> o <body>
+   --------------------------------------------------------- */
+[data-theme="dark"] {
+  --ink: #f3f4f6;
+  --muted: #d1d5db;
+  --surface: #0f1012;
+  --panel: #15171a;
+  --panel-input: #1b1d21; /* inputs un poco más claros */
+  --stroke: #2a2d32;
+  --placeholder: #a8adb4;
+
+  /* Paletas de alertas (OSCURO) */
+  --alert-success-bg: #0b2e1a;
+  --alert-success-border: #134e29;
+  --alert-success-text: #86efac;
+
+  --alert-warning-bg: #2a1f09;
+  --alert-warning-border: #4a3410;
+  --alert-warning-text: #fde68a;
+
+  --alert-error-bg: #2a1212;
+  --alert-error-border: #4c1d1d;
+  --alert-error-text: #fca5a5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ---------------------------------------------------------
+   3) UTILIDADES DE COLOR (basadas en tokens)
+   --------------------------------------------------------- */
+.bg-beso {
+  background: var(--beso-primary);
+}
+.bg-beso-600 {
+  background: var(--beso-primary-600);
+}
+.text-beso {
+  color: var(--beso-primary);
+}
+.border-beso {
+  border-color: var(--beso-primary);
+}
+
+/* Sombras y bordes suaves consistentes */
+.shadow-card {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+.soft-border {
+  border-color: var(--stroke);
+}
+
+/* ---------------------------------------------------------
+   4) ESTILOS BASE
+   --------------------------------------------------------- */
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tipografía base utilizable sin Tailwind */
+h1,
+h2,
+h3,
+h4 {
+  color: var(--ink);
+}
+.muted {
+  color: var(--muted);
+}
+
+a {
+  color: var(--beso-primary);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--beso-primary-600);
+}
+
+/* Contenedor tipo "panel/tarjeta" reutilizable */
+.panel {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--stroke);
+  border-radius: 1rem;
+}
+
+/* ---------------------------------------------------------
+   5) COMPONENTES
+   --------------------------------------------------------- */
+
+/* ====== Botones ====== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* Primario */
+.btn--primary {
+  background: var(--beso-primary);
+  color: #fff;
+}
+.btn--primary:hover {
+  background: var(--beso-primary-600);
+}
+
+/* Secundario (outline de marca) */
+.btn--secondary {
+  background: transparent;
+  color: var(--beso-primary);
+  border-color: var(--beso-primary);
+}
+.btn--secondary:hover {
+  background: color-mix(in srgb, var(--beso-primary) 8%, transparent);
+}
+
+/* Neutro (tema-aware) */
+.btn--neutral {
+  border-width: 1px;
+}
+:root .btn--neutral {
+  background: #f3f4f6; /* gray-100/200 */
+  color: #111827; /* gray-900 */
+  border-color: #d1d5db;
+}
+:root .btn--neutral:hover {
+  background: #e5e7eb;
+}
+[data-theme="dark"] .btn--neutral {
+  background: #2a2d32;
+  color: #e7eaf0;
+  border-color: #3a3f46;
+}
+[data-theme="dark"] .btn--neutral:hover {
+  background: #32363d;
+}
+
+/* Estado/semánticos */
+.btn--success {
+  background: var(--success);
+  color: #fff;
+}
+.btn--danger {
+  background: var(--error);
+  color: #fff;
+}
+
+/* Enfoque accesible */
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--beso-primary);
+}
+
+/* ====== Inputs / Select / Textarea ====== */
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--stroke);
+  background: var(--panel-input);
+  color: var(--ink);
+  padding: 0.58rem 0.9rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background 0.15s ease, color 0.15s ease;
+}
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--placeholder);
+}
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--beso-primary);
+  box-shadow: 0 0 0 2px var(--beso-primary);
+}
+
+/* Checkboxes/radios básicos (heredan tema) */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--beso-primary);
+}
+
+/* ====== Chips (pills) para tallas/etiquetas ====== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.chip button {
+  color: var(--muted);
+}
+
+/* ====== Cards ====== */
+.card {
+  border-radius: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+/* ====== Tabla ====== */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.table thead th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--stroke);
+}
+.table tbody td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--stroke);
+}
+.table tbody tr:hover {
+  opacity: 0.92;
+}
+
+/* ====== Alertas (tema-aware) ====== */
+.alert {
+  border: 1px solid;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  font-weight: 500;
+}
+.alert--success {
+  background: var(--alert-success-bg);
+  border-color: var(--alert-success-border);
+  color: var(--alert-success-text);
+}
+.alert--warning {
+  background: var(--alert-warning-bg);
+  border-color: var(--alert-warning-border);
+  color: var(--alert-warning-text);
+}
+.alert--error {
+  background: var(--alert-error-bg);
+  border-color: var(--alert-error-border);
+  color: var(--alert-error-text);
+}
+
+/* ====== Modal ====== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none; /* usar .is-open para mostrar */
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+.modal-backdrop.is-open {
+  display: flex;
+}
+
+.modal {
+  max-width: 40rem;
+  width: 100%;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--stroke);
+  border-radius: 1rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+/* Header/acciones del modal */
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--stroke);
+}
+.modal__body {
+  padding: 1.25rem;
+}
+.modal__footer {
+  padding: 1rem 1.25rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* Helpers genéricos */
+.hidden {
+  display: none !important;
+}
+
+/* Contenedor genérico */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Header */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(6px);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 64px;
+}
+
+/* Marca */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+}
+.brand-logo {
+  border-radius: 50%;
+}
+.brand-name {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+}
+
+/* Buscador */
+.search-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 520px;
+}
+.search-form input {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-primary);
+  border-radius: 0.75rem;
+}
+
+/* Navegación */
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  margin-right: 0.5rem;
+}
+.nav-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.nav-links a:hover {
+  color: var(--text-primary);
+}
+
+/* Botones */
+.btn {
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.8rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.btn.primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.btn.primary:hover {
+  filter: brightness(1.05);
+}
+.btn.ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+.btn.ghost:hover {
+  color: var(--text-primary);
+}
+
+/* Toggle icon */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 0.8rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  background: transparent;
+}
+.icon-button:hover {
+  color: var(--text-primary);
+}
+
+/* Hamburguesa */
+.hamburger {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+}
+.hamburger span {
+  width: 20px;
+  height: 2px;
+  background: var(--text-secondary);
+}
+
+/* Menú móvil */
+.mobile-menu {
+  border-top: 1px solid var(--border);
+  padding: 0.75rem 1rem 1rem;
+  background: var(--bg-raised);
+}
+.mobile-links {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.mobile-links a {
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.7rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.mobile-links a:hover {
+  background: var(--bg-hover);
+}
+
+/* Main page wrapper */
+.page {
+  padding: 1.2rem;
+}
+
+/* ===== Ajustes para el bloque derecho del header y carrito ===== */
+.right-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Botón de carrito con badge */
+.cart-button {
+  position: relative;
+}
+.cart-button .badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+  background: var(--beso-primary);
+  border: 1px solid var(--panel);
+}
+
+.right-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.cart-button {
+  position: relative;
+}
+.cart-button .badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+  background: var(--beso-primary);
+  border: 1px solid var(--panel);
+}
+
+/* utilidades responsive que ya definiste */
+.hidden {
+  display: none;
+}
+.sm\:flex {
+  display: none;
+}
+.md\:flex {
+  display: none;
+}
+.md\:hidden {
+  display: inline-flex;
+}
+@media (min-width: 640px) {
+  .sm\:flex {
+    display: flex;
+  }
+}
+@media (min-width: 768px) {
+  .md\:flex {
+    display: flex;
+  }
+  .md\:hidden {
+    display: none;
+  }
+}
+
+/* =========================================================
+   Hamburguesa: contraste y accesibilidad en claro/oscuro
+   ========================================================= */
+
+.hamburger {
+  /* layout */
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+
+  /* caja */
+  padding: 8px;
+  border-radius: 0.75rem;
+  border: 1px solid var(--stroke);
+
+  /* color por tema (se sobreescribe abajo) */
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+
+  /* feedback */
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease, box-shadow 0.2s ease;
+
+  /* sutil sombra para que siempre “flote” */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* barras */
+.hamburger span {
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+/* hover/focus accesible */
+.hamburger:hover {
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.hamburger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--beso-primary);
+}
+
+/* Tema oscuro: más contraste y borde acorde */
+[data-theme="dark"] .hamburger {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #3a3f46;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 6px 18px rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .hamburger:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* (opcional) asegúrate que el contenedor del header tenga buen z-index */
+.site-header {
+  z-index: 60;
+}
+
+/* Ocultar la hamburguesa en escritorio, pase lo que pase */
+.hamburger {
+  display: inline-flex; /* visible por defecto (móvil/tablet) */
+}
+
+@media (min-width: 768px) {
+  .hamburger {
+    display: none !important; /* oculta en >= 768px */
+  }
+}
+
+/* ====== Admin Layout ====== */
+.admin-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 1024px) {
+  .admin-shell {
+    grid-template-columns: 240px 1fr; /* sidebar + main */
+    align-items: start;
+  }
+}
+.admin-main {
+  padding: 1rem;
+}
+
+/* ====== Dashboard ====== */
+.admin-dashboard {
+  display: grid;
+  gap: 1rem;
+}
+.admin-title {
+  font-size: 1.6rem;
+  margin: 0 0 0.5rem;
+}
+
+/* util paddings */
+.p-4 {
+  padding: 1rem;
+}
+
+/* KPIs */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.kpi {
+  display: grid;
+  gap: 0.35rem;
+}
+.kpi__title {
+  color: var(--muted);
+  font-weight: 600;
+}
+.kpi__value {
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+.kpi__helper {
+  font-size: 0.85rem;
+}
+
+/* 2 columnas (tabla + chart) */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .two-col {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.card-title {
+  margin: 0 0 0.75rem;
+}
+
+/* Chart wrapper */
+.chart {
+  width: 100%;
+  height: 240px;
+}
+.chart svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===========================
+   Admin Shell + Sidebar
+   =========================== */
+
+/* Contenedor principal de admin: sidebar + contenido */
+.admin-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr; /* ancho fijo de sidebar en desktop */
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+/* Sidebar fija (desktop) / Drawer (móvil) */
+.admin-sidebar {
+  position: sticky;
+  top: 76px; /* altura aproximada del header */
+  align-self: start;
+  height: calc(100dvh - 92px);
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+/* Navegación interior de la sidebar */
+.admin-nav {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.admin-nav-title {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 0.75rem;
+  color: var(--text-primary, var(--ink));
+}
+
+.admin-nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.admin-nav-item:hover {
+  background: color-mix(in srgb, var(--beso-primary) 6%, transparent);
+  border-color: color-mix(in srgb, var(--beso-primary) 25%, var(--stroke));
+}
+.admin-nav-item.danger {
+  border-color: #f3c0c0;
+  color: #8f1111;
+}
+[data-theme="dark"] .admin-nav-item.danger {
+  border-color: #4c1d1d;
+  color: #fca5a5;
+}
+
+/* Zona de contenido */
+.admin-content {
+  min-height: 60vh;
+}
+
+/* --------- Responsive (móvil/tablet) --------- */
+@media (max-width: 1024px) {
+  .admin-shell {
+    grid-template-columns: 1fr; /* oculta columna sidebar fija */
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    top: 64px; /* debajo del header */
+    left: 0;
+    height: calc(100dvh - 64px);
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 60;
+  }
+  .admin-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .admin-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 50;
+  }
+}
+/* --- Píldora de usuario en el header admin --- */
+.user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 0.8rem;
+  max-width: 220px;
+}
+
+.user-pill .truncate {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--stroke);
+  background: color-mix(in srgb, var(--beso-primary) 8%, transparent);
+  color: var(--beso-primary);
+}
+
+/* ===== Admin drawer (móvil) sin tocar el componente ===== */
+@media (max-width: 1024px) {
+  /* Por defecto: sidebar fuera de pantalla, NO ocupa espacio */
+  .admin-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 86vw; /* algo ancho en móvil */
+    max-width: 320px; /* límite cómodo */
+    height: 100vh;
+    transform: translateX(-110%);
+    transition: transform 220ms ease, box-shadow 220ms ease;
+    background: var(--panel);
+    color: var(--ink);
+    border-right: 1px solid var(--stroke);
+    z-index: 50; /* por encima del contenido */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cuando está "abierto": centrada (overlay desde el borde izquierdo) */
+  body.admin-drawer-open .admin-nav {
+    transform: translateX(0);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Backdrop global al abrir el drawer */
+  body.admin-drawer-open::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(1px);
+    z-index: 40; /* menor que la nav (50) para quedar debajo */
+  }
+}
+
+/* Escritorio: comportamiento normal, en flujo */
+@media (min-width: 1025px) {
+  .admin-nav {
+    position: sticky; /* o static si así la tienes */
+    top: 0;
+    height: 100vh; /* si quieres que ocupe toda la altura */
+    transform: none;
+    box-shadow: none;
+    z-index: 1;
+  }
+}
+
+/* ===== Estilos visibles para la sidebar de admin ===== */
+
+/* Contenedor: columna con separación */
+.admin-nav {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 1rem; /* asegura tamaño legible */
+  background: var(--panel); /* ya lo usamos en móvil */
+  color: var(--ink);
+}
+
+/* Enlaces y botón con el mismo look */
+.admin-nav-item {
+  display: block;
+  text-decoration: none;
+  background: var(--panel); /* contraste con el fondo del drawer */
+  color: var(--ink) !important; /* fuerza color legible en modo oscuro/claro */
+  border: 1px solid var(--stroke);
+  border-radius: 0.9rem;
+  padding: 12px 14px;
+  font-weight: 600;
+  line-height: 1.25rem;
+  transition: background 160ms ease, border-color 160ms ease, opacity 160ms ease;
+}
+
+/* Hover/focus accesible */
+.admin-nav-item:hover,
+.admin-nav-item:focus-visible {
+  background: color-mix(in srgb, var(--beso-primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--beso-primary) 35%, var(--stroke));
+  outline: none;
+}
+
+/* Botón de cerrar sesión con semántica de “peligro” */
+.admin-nav-item.danger {
+  color: #ef4444 !important; /* rojo accesible */
+  border-color: #ef444433;
+}
+.admin-nav-item.danger:hover,
+.admin-nav-item.danger:focus-visible {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: #ef4444;
+}
+
+/* Asegura que los botones hereden el color y no tengan estilos de botón nativos raros */
+.admin-nav button.admin-nav-item {
+  background: var(--panel);
+  cursor: pointer;
+}
+
+/* El overlay no debe tapar los clicks de la nav */
+body.admin-drawer-open .admin-nav {
+  pointer-events: auto;
+}
+/* DEBUG 60s: ver contornos dentro del aside */
+.admin-sidebar.is-open * {
+  outline: 1px solid red !important;
+}
+
+/* ====== Overlay forzado de enlaces (solo móvil, solo cuando open=true) ====== */
+@media (max-width: 1024px) {
+  .admin-fallback-list {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2000; /* por encima del aside y del backdrop */
+    width: min(86vw, 320px);
+    height: 100dvh;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--panel, #fff);
+    color: var(--ink, #111);
+    border-right: 1px solid var(--stroke, #e6e6ea);
+    overflow: auto;
+  }
+
+  .admin-fallback-item {
+    display: block;
+    text-decoration: none;
+    background: var(--panel, #fff);
+    color: var(--ink, #111) !important;
+    border: 1px solid var(--stroke, #e6e6ea);
+    border-radius: 0.9rem;
+    padding: 12px 14px;
+    font-weight: 700;
+    line-height: 1.25rem;
+  }
+
+  [data-theme="dark"] .admin-fallback-list {
+    background: var(--panel, #15171a);
+    color: var(--ink, #f3f4f6);
+    border-color: var(--stroke, #2a2d32);
+  }
+  [data-theme="dark"] .admin-fallback-item {
+    background: var(--panel, #15171a);
+    color: var(--ink, #f3f4f6) !important;
+    border-color: var(--stroke, #2a2d32);
+  }
+
+  .admin-fallback-item:hover,
+  .admin-fallback-item:focus-visible {
+    background: color-mix(
+      in srgb,
+      var(--beso-primary, #b24c5a) 10%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--beso-primary, #b24c5a) 35%,
+      var(--stroke, #e6e6ea)
+    );
+    outline: none;
+  }
+
+  .admin-fallback-item.danger {
+    color: #ef4444 !important;
+    border-color: #ef444433;
+  }
+  .admin-fallback-item.danger:hover,
+  .admin-fallback-item.danger:focus-visible {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: #ef4444;
+  }
+}
+
+/* En escritorio NO aparece el overlay forzado */
+@media (min-width: 1025px) {
+  .admin-fallback-list {
+    display: none !important;
+  }
+}
+
+.admin-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500; /* menor que la lista (2000), mayor que el resto */
+  background: rgba(0, 0, 0, 0.45);
+  border: none;
 }

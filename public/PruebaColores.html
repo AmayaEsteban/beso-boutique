@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BESO · UI Playground (tema + tallas)</title>
+    <!-- Tailwind CDN solo para este playground -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      /* =========================
+       Tokens y tema (Light)
+    ==========================*/
+      :root {
+        /* Marca */
+        --beso-primary: #b24c5a; /* rosa labial */
+        --beso-primary-600: #9f4451;
+
+        /* Tipografía y superficies (LIGHT) */
+        --ink: #1f1f1f; /* texto principal */
+        --muted: #6b7280; /* texto secundario */
+        --surface: #f7f7f7; /* fondo global */
+        --panel: #ffffff; /* tarjetas/paneles */
+        --panel-input: #ffffff; /* fondo de inputs */
+        --stroke: #e6e6ea; /* bordes suaves */
+        --placeholder: #9ca3af; /* placeholder legible en claro */
+
+        /* Estados base (sin tema) */
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --error: #dc2626;
+
+        /* Alertas (LIGHT) */
+        --alert-success-bg: #ecfdf5;
+        --alert-success-border: #dcfce7;
+        --alert-success-text: #065f46;
+
+        --alert-warning-bg: #fffbeb;
+        --alert-warning-border: #fef3c7;
+        --alert-warning-text: #92400e;
+
+        --alert-error-bg: #fef2f2;
+        --alert-error-border: #fecaca;
+        --alert-error-text: #991b1b;
+      }
+
+      /* =========================
+       Overrides para Dark
+    ==========================*/
+      [data-theme="dark"] {
+        --ink: #f3f4f6;
+        --muted: #d1d5db;
+        --surface: #0f1012;
+        --panel: #15171a;
+        --panel-input: #1b1d21; /* inputs un poco más claros que el panel */
+        --stroke: #2a2d32;
+        --placeholder: #a8adb4; /* placeholder más claro para contraste */
+
+        /* Alertas (DARK) */
+        --alert-success-bg: #0b2e1a;
+        --alert-success-border: #134e29;
+        --alert-success-text: #86efac;
+
+        --alert-warning-bg: #2a1f09;
+        --alert-warning-border: #4a3410;
+        --alert-warning-text: #fde68a;
+
+        --alert-error-bg: #2a1212;
+        --alert-error-border: #4c1d1d;
+        --alert-error-text: #fca5a5;
+      }
+
+      /* =========================
+       Utilidades basadas en vars
+    ==========================*/
+      .bg-beso {
+        background: var(--beso-primary);
+      }
+      .bg-beso-600 {
+        background: var(--beso-primary-600);
+      }
+      .text-beso {
+        color: var(--beso-primary);
+      }
+      .ring-beso {
+        --tw-ring-color: var(--beso-primary);
+      }
+      .border-beso {
+        border-color: var(--beso-primary);
+      }
+      .shadow-card {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      }
+
+      body {
+        background: var(--surface);
+        color: var(--ink);
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--stroke);
+        color: var(--ink);
+      }
+      .soft-border {
+        border-color: var(--stroke);
+      }
+      .muted {
+        color: var(--muted);
+      }
+
+      /* Inputs / selects / textareas */
+      .input {
+        width: 100%;
+        border-radius: 0.75rem;
+        border: 1px solid var(--stroke);
+        background: var(--panel-input);
+        color: var(--ink);
+        padding: 0.5rem 0.75rem;
+        outline: none;
+      }
+      .input:focus {
+        box-shadow: 0 0 0 2px var(--beso-primary);
+        border-color: var(--beso-primary);
+      }
+      .input::placeholder {
+        color: var(--placeholder);
+      }
+
+      /* Botón neutro (por tema) */
+      .btn-neutral {
+        border-radius: 0.75rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid;
+        transition: background 0.15s ease, color 0.15s ease,
+          border-color 0.15s ease;
+      }
+      /* claro */
+      :root .btn-neutral {
+        background: #f3f4f6; /* gray-100/200 */
+        color: #111827; /* gray-900 */
+        border-color: #d1d5db; /* gray-300 */
+      }
+      :root .btn-neutral:hover {
+        background: #e5e7eb;
+      }
+      /* oscuro */
+      [data-theme="dark"] .btn-neutral {
+        background: #2a2d32; /* gris oscuro */
+        color: #e7eaf0; /* texto claro */
+        border-color: #3a3f46; /* borde gris */
+      }
+      [data-theme="dark"] .btn-neutral:hover {
+        background: #32363d;
+      }
+
+      /* Modal */
+      .modal-backdrop {
+        background: rgba(0, 0, 0, 0.5);
+      }
+      .hidden {
+        display: none;
+      }
+
+      /* Chips */
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 9999px;
+        border: 1px solid var(--stroke);
+        background: var(--panel);
+        color: var(--ink);
+      }
+      .chip button {
+        color: var(--muted);
+      }
+
+      /* Alertas */
+      .alert {
+        border-width: 1px;
+        border-style: solid;
+        border-radius: 0.75rem;
+        padding: 1rem;
+      }
+      .alert-success {
+        background: var(--alert-success-bg);
+        border-color: var(--alert-success-border);
+        color: var(--alert-success-text);
+      }
+      .alert-warning {
+        background: var(--alert-warning-bg);
+        border-color: var(--alert-warning-border);
+        color: var(--alert-warning-text);
+      }
+      .alert-error {
+        background: var(--alert-error-bg);
+        border-color: var(--alert-error-border);
+        color: var(--alert-error-text);
+      }
+    </style>
+  </head>
+
+  <body class="min-h-screen" id="root">
+    <!-- Header -->
+    <header class="sticky top-0 z-10 panel backdrop-blur">
+      <div
+        class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"
+      >
+        <h1 class="text-2xl font-bold tracking-wide">
+          <span class="text-beso">BESO</span> · UI Playground
+        </h1>
+        <nav class="flex items-center gap-4 text-sm">
+          <a href="#colores" class="hover:text-beso">Colores</a>
+          <a href="#tipografia" class="hover:text-beso">Tipografía</a>
+          <a href="#botones" class="hover:text-beso">Botones</a>
+          <a href="#formularios" class="hover:text-beso">Form</a>
+          <a href="#cards" class="hover:text-beso">Cards</a>
+          <a href="#tablas" class="hover:text-beso">Tablas</a>
+          <a href="#modales" class="hover:text-beso">Modales</a>
+          <a href="#alertas" class="hover:text-beso">Alertas</a>
+
+          <!-- Toggle Light/Dark -->
+          <button
+            id="themeToggle"
+            class="ml-2 px-3 py-2 rounded-xl border soft-border hover:bg-beso hover:text-white transition"
+          >
+            Modo: <span id="themeLabel" class="font-semibold">Claro</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8 space-y-12">
+      <!-- Paleta -->
+      <section id="colores" class="space-y-4">
+        <h2 class="text-xl font-semibold">🎨 Paleta BESO</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+          <div class="p-4 rounded-xl shadow-card panel">
+            <div class="h-16 rounded-lg bg-beso"></div>
+            <p class="mt-2 text-sm font-medium">Primario</p>
+            <p class="text-xs muted">#B24C5A</p>
+          </div>
+          <div class="p-4 rounded-xl shadow-card panel">
+            <div class="h-16 rounded-lg bg-beso-600"></div>
+            <p class="mt-2 text-sm font-medium">Primario 600</p>
+            <p class="text-xs muted">#9F4451</p>
+          </div>
+          <div class="p-4 rounded-xl shadow-card panel">
+            <div class="h-16 rounded-lg" style="background: #1f1f1f"></div>
+            <p class="mt-2 text-sm font-medium">Ink/Dark</p>
+            <p class="text-xs muted">#1F1F1F</p>
+          </div>
+          <div class="p-4 rounded-xl shadow-card panel">
+            <div class="h-16 rounded-lg" style="background: #f7f7f7"></div>
+            <p class="mt-2 text-sm font-medium">Surface</p>
+            <p class="text-xs muted">#F7F7F7</p>
+          </div>
+          <div class="p-4 rounded-xl shadow-card panel">
+            <div class="h-16 rounded-lg" style="background: #22c55e"></div>
+            <p class="mt-2 text-sm font-medium">Success</p>
+            <p class="text-xs muted">#22C55E</p>
+          </div>
+          <div class="p-4 rounded-xl shadow-card panel">
+            <div class="h-16 rounded-lg" style="background: #dc2626"></div>
+            <p class="mt-2 text-sm font-medium">Error</p>
+            <p class="text-xs muted">#DC2626</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tipografía -->
+      <section id="tipografia" class="space-y-4">
+        <h2 class="text-xl font-semibold">🔤 Tipografía</h2>
+        <p class="text-sm muted">
+          Sugeridas: <b>Poppins</b> (títulos) y <b>Inter</b> (texto).
+        </p>
+        <div class="space-y-2 panel rounded-xl shadow-card p-6">
+          <h1 class="text-3xl md:text-4xl font-bold tracking-tight">
+            H1 — Catálogo de Boutique BESO
+          </h1>
+          <h2 class="text-2xl font-semibold">H2 — Productos destacados</h2>
+          <h3 class="text-xl font-semibold">H3 — Vestidos de temporada</h3>
+          <p class="text-base leading-relaxed">
+            Texto base con interlineado cómodo. Escala tipográfica y sistema de
+            espaciado de 8px.
+          </p>
+          <p class="text-sm muted">Caption o meta info</p>
+        </div>
+      </section>
+
+      <!-- Botones -->
+      <section id="botones" class="space-y-4">
+        <h2 class="text-xl font-semibold">🔘 Botones</h2>
+        <div class="flex flex-wrap gap-3 panel rounded-xl shadow-card p-6">
+          <button
+            class="px-4 py-2 rounded-xl bg-beso text-white hover:bg-beso-600 focus:outline-none focus:ring-2 ring-beso"
+          >
+            Primario
+          </button>
+          <button
+            class="px-4 py-2 rounded-xl border border-beso text-beso hover:bg-[var(--surface)]"
+          >
+            Secundario
+          </button>
+          <button class="btn-neutral">Neutro</button>
+          <button
+            class="px-4 py-2 rounded-xl"
+            style="background: var(--success); color: white"
+          >
+            Éxito
+          </button>
+          <button
+            class="px-4 py-2 rounded-xl"
+            style="background: var(--error); color: white"
+          >
+            Peligro
+          </button>
+          <button class="px-3 py-1 rounded-full border text-sm soft-border">
+            Badge
+          </button>
+        </div>
+      </section>
+
+      <!-- Formularios (incluye tallas múltiples) -->
+      <section id="formularios" class="space-y-4">
+        <h2 class="text-xl font-semibold">
+          🧾 Formularios (producto con múltiples tallas)
+        </h2>
+        <form
+          class="grid md:grid-cols-2 gap-4 panel rounded-xl shadow-card p-6"
+        >
+          <div>
+            <label class="text-sm muted">Nombre del producto</label>
+            <input class="input mt-1" placeholder="Vestido Rojo" />
+          </div>
+          <div>
+            <label class="text-sm muted">Precio (Q)</label>
+            <input
+              type="number"
+              class="input mt-1"
+              placeholder="349.99"
+              step="0.01"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm muted">Color</label>
+            <input class="input mt-1" placeholder="Negro / Rojo / Azul" />
+          </div>
+          <div>
+            <label class="text-sm muted">Categoría</label>
+            <select class="input mt-1">
+              <option>Vestidos</option>
+              <option>Blusas</option>
+              <option>Pantalones</option>
+            </select>
+          </div>
+
+          <!-- MULTI TALLAS -->
+          <div class="md:col-span-2">
+            <label class="text-sm muted">Tallas (selección múltiple)</label>
+            <div class="mt-2 flex flex-wrap gap-3">
+              <label class="inline-flex items-center gap-2"
+                ><input type="checkbox" value="XS" class="sizeOpt" /> XS</label
+              >
+              <label class="inline-flex items-center gap-2"
+                ><input type="checkbox" value="S" class="sizeOpt" /> S</label
+              >
+              <label class="inline-flex items-center gap-2"
+                ><input type="checkbox" value="M" class="sizeOpt" /> M</label
+              >
+              <label class="inline-flex items-center gap-2"
+                ><input type="checkbox" value="L" class="sizeOpt" /> L</label
+              >
+              <label class="inline-flex items-center gap-2"
+                ><input type="checkbox" value="XL" class="sizeOpt" /> XL</label
+              >
+              <label class="inline-flex items-center gap-2"
+                ><input type="checkbox" value="XXL" class="sizeOpt" />
+                XXL</label
+              >
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+              <input
+                id="sizeInput"
+                placeholder="Agregar talla personalizada (p.ej. 32, 34, 36)"
+                class="input flex-1"
+              />
+              <button
+                type="button"
+                id="addSize"
+                class="px-3 py-2 rounded-xl border soft-border hover:bg-[var(--surface)]"
+              >
+                Agregar
+              </button>
+            </div>
+
+            <div id="sizeChips" class="mt-3 flex flex-wrap gap-2"></div>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="text-sm muted">Descripción</label>
+            <textarea
+              rows="3"
+              class="input mt-1"
+              placeholder="Detalles del producto..."
+            ></textarea>
+          </div>
+
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button
+              type="button"
+              class="px-4 py-2 rounded-xl bg-beso text-white hover:bg-beso-600"
+            >
+              Guardar
+            </button>
+            <button
+              type="reset"
+              id="resetForm"
+              class="px-4 py-2 rounded-xl border soft-border hover:bg-[var(--surface)]"
+            >
+              Limpiar
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Cards -->
+      <section id="cards" class="space-y-4">
+        <h2 class="text-xl font-semibold">🗂️ Cards</h2>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <article class="rounded-2xl shadow-card panel overflow-hidden">
+            <div class="h-40" style="background: var(--stroke)"></div>
+            <div class="p-4">
+              <h3 class="font-semibold">Vestido Rojo</h3>
+              <p class="text-sm muted">Q 349.99</p>
+              <button
+                class="mt-3 px-3 py-2 rounded-xl bg-beso text-white hover:bg-beso-600"
+              >
+                Agregar al carrito
+              </button>
+            </div>
+          </article>
+          <article class="rounded-2xl shadow-card panel overflow-hidden">
+            <div class="h-40" style="background: var(--stroke)"></div>
+            <div class="p-4">
+              <h3 class="font-semibold">Blusa Blanca</h3>
+              <p class="text-sm muted">Q 159.50</p>
+              <button
+                class="mt-3 px-3 py-2 rounded-xl border border-beso text-beso hover:bg-[var(--surface)]"
+              >
+                Ver detalles
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Tabla -->
+      <section id="tablas" class="space-y-4">
+        <h2 class="text-xl font-semibold">📊 Tablas</h2>
+        <div class="overflow-auto rounded-xl shadow-card panel">
+          <table class="min-w-[640px] w-full text-left">
+            <thead style="background: var(--surface); color: var(--muted)">
+              <tr class="text-sm">
+                <th class="px-4 py-3">SKU</th>
+                <th class="px-4 py-3">Producto</th>
+                <th class="px-4 py-3">Precio</th>
+                <th class="px-4 py-3">Stock</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="hover:opacity-90">
+                <td class="px-4 py-3">VR-001</td>
+                <td class="px-4 py-3">Vestido Rojo</td>
+                <td class="px-4 py-3">Q 349.99</td>
+                <td class="px-4 py-3">12</td>
+                <td class="px-4 py-3">
+                  <button
+                    class="px-3 py-1 rounded-xl bg-beso text-white text-sm"
+                  >
+                    Editar
+                  </button>
+                </td>
+              </tr>
+              <tr class="hover:opacity-90">
+                <td class="px-4 py-3">BB-002</td>
+                <td class="px-4 py-3">Blusa Blanca</td>
+                <td class="px-4 py-3">Q 159.50</td>
+                <td class="px-4 py-3">20</td>
+                <td class="px-4 py-3">
+                  <button
+                    class="px-3 py-1 rounded-xl border border-beso text-beso text-sm"
+                  >
+                    Ver
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Modales -->
+      <section id="modales" class="space-y-4">
+        <h2 class="text-xl font-semibold">🪟 Modales</h2>
+        <button
+          id="openModal"
+          class="px-4 py-2 rounded-xl bg-beso text-white hover:bg-beso-600"
+        >
+          Abrir modal
+        </button>
+
+        <div
+          id="backdrop"
+          class="modal-backdrop fixed inset-0 hidden items-center justify-center p-4"
+        >
+          <div class="rounded-2xl shadow-card panel max-w-md w-full">
+            <div
+              class="p-5 border-b soft-border flex items-center justify-between"
+            >
+              <h3 class="font-semibold">Confirmar acción</h3>
+              <button id="closeModal" class="muted hover:text-beso">✕</button>
+            </div>
+            <div class="p-5">
+              <p>¿Deseas guardar los cambios?</p>
+            </div>
+            <div class="p-5 pt-0 flex justify-end gap-3">
+              <button
+                id="cancel"
+                class="px-4 py-2 rounded-xl border soft-border"
+              >
+                Cancelar
+              </button>
+              <button
+                class="px-4 py-2 rounded-xl bg-beso text-white hover:bg-beso-600"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Alertas -->
+      <section id="alertas" class="space-y-4">
+        <h2 class="text-xl font-semibold">⚠️ Alertas</h2>
+        <div class="space-y-3">
+          <div class="alert alert-success">
+            Éxito: operación realizada correctamente.
+          </div>
+          <div class="alert alert-warning">
+            Aviso: revisa los campos resaltados.
+          </div>
+          <div class="alert alert-error">Error: no se pudo guardar.</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="mt-12 border-t soft-border">
+      <div class="max-w-6xl mx-auto px-4 py-6 text-sm muted">
+        BESO · Playground de componentes (Fase 0.5)
+      </div>
+    </footer>
+
+    <script>
+      // ====== Light/Dark toggle con persistencia ======
+      const root = document.getElementById("root");
+      const themeToggle = document.getElementById("themeToggle");
+      const themeLabel = document.getElementById("themeLabel");
+
+      function setTheme(mode) {
+        if (mode === "dark") {
+          root.setAttribute("data-theme", "dark");
+          themeLabel.textContent = "Oscuro";
+        } else {
+          root.removeAttribute("data-theme");
+          themeLabel.textContent = "Claro";
+        }
+        localStorage.setItem("beso_theme", mode);
+      }
+      // init
+      setTheme(localStorage.getItem("beso_theme") || "light");
+      themeToggle.addEventListener("click", () => {
+        const next =
+          root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        setTheme(next);
+      });
+
+      // ====== Modal ======
+      const back = document.getElementById("backdrop");
+      document.getElementById("openModal").onclick = () =>
+        back.classList.remove("hidden");
+      document.getElementById("closeModal").onclick = () =>
+        back.classList.add("hidden");
+      document.getElementById("cancel").onclick = () =>
+        back.classList.add("hidden");
+      back.addEventListener("click", (e) => {
+        if (e.target === back) back.classList.add("hidden");
+      });
+
+      // ====== Tallas múltiples ======
+      const chips = document.getElementById("sizeChips");
+      const addBtn = document.getElementById("addSize");
+      const sizeInput = document.getElementById("sizeInput");
+      const selected = new Set();
+
+      document.querySelectorAll(".sizeOpt").forEach((cb) => {
+        cb.addEventListener("change", (e) => {
+          const v = e.target.value.trim();
+          e.target.checked ? selected.add(v) : selected.delete(v);
+          renderChips();
+        });
+      });
+
+      addBtn.addEventListener("click", () => {
+        const v = sizeInput.value.trim().toUpperCase();
+        if (!v) return;
+        selected.add(v);
+        sizeInput.value = "";
+        renderChips();
+      });
+
+      document.getElementById("resetForm").addEventListener("click", () => {
+        selected.clear();
+        document
+          .querySelectorAll(".sizeOpt")
+          .forEach((cb) => (cb.checked = false));
+        renderChips();
+      });
+
+      function renderChips() {
+        chips.innerHTML = "";
+        Array.from(selected).forEach((v) => {
+          const el = document.createElement("span");
+          el.className = "chip";
+          el.innerHTML = `${v} <button title="Quitar" aria-label="Quitar talla">×</button>`;
+          el.querySelector("button").onclick = () => {
+            selected.delete(v);
+            document.querySelectorAll(".sizeOpt").forEach((cb) => {
+              if (cb.value.toUpperCase() === v) cb.checked = false;
+            });
+            renderChips();
+          };
+          chips.appendChild(el);
+        });
+      }
+    </script>
+  </body>
+</html>
