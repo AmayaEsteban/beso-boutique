@@ -20,11 +20,17 @@ model Rol {
 model Usuario {
   id             Int             @id @default(autoincrement()) @map("id_usuario")
   nombre         String          @db.VarChar(100)
+  apellidos      String?         @db.VarChar(100)        // <--- NUEVO
   email          String          @unique(map: "email") @db.VarChar(100)
   password       String          @db.VarChar(255)
   idRol          Int             @map("id_rol")
   estado         UsuariosEstado? @default(activo)
   fecha_registro DateTime        @default(now()) @db.Timestamp(0)
+
+  dpi            String?         @db.VarChar(20)
+  nit            String?         @db.VarChar(20)
+  direccion      String?         @db.VarChar(255)
+
   auditoria      Auditoria[]
   compras        Compra[]
   rol            Rol             @relation(fields: [idRol], references: [idRol], map: "fk_usuarios_roles")
@@ -33,6 +39,7 @@ model Usuario {
   @@index([idRol], map: "fk_usuarios_roles")
   @@map("usuarios")
 }
+
 
 model Categoria {
   id          Int        @id @default(autoincrement()) @map("id_categoria")

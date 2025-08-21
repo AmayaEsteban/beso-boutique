@@ -1068,3 +1068,102 @@ body.admin-drawer-open .admin-nav {
   background: rgba(0, 0, 0, 0.45);
   border: none;
 }
+
+/* ===== Modal centrado con overlay ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* cerrado por defecto, se activa con [data-open="true"] */
+}
+.modal[data-open="true"] {
+  pointer-events: auto;
+}
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(1px);
+  transition: opacity 0.2s ease;
+  opacity: 1;
+}
+.modal__panel {
+  position: relative;
+  width: min(900px, 92vw);
+  max-height: 84vh;
+  overflow: auto;
+  background: var(--panel, #fff);
+  color: var(--ink, #111);
+  border: 1px solid var(--stroke, #e5e7eb);
+  border-radius: 1rem;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.28);
+  padding: 1rem;
+  transform: translateY(0);
+}
+
+/* Botón de cierre “X” en el modal */
+.modal__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.75;
+}
+.modal__close:hover {
+  opacity: 1;
+}
+
+/* ===== Icon buttons para acciones de fila ===== */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 0.75rem;
+  border: 1px solid var(--stroke, #e5e7eb);
+  background: var(--panel, #fff);
+  color: var(--ink, #111);
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  margin-inline: 0.2rem;
+}
+.icon-btn:hover,
+.icon-btn:focus-visible {
+  background: color-mix(in srgb, var(--beso-primary, #b91c1c) 8%, transparent);
+  border-color: color-mix(
+    in srgb,
+    var(--beso-primary, #b91c1c) 35%,
+    var(--stroke, #e5e7eb)
+  );
+  outline: none;
+}
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* estados */
+.icon-btn--danger {
+  color: #ef4444;
+  border-color: #ef444433;
+}
+.icon-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: #ef4444;
+}
+.icon-btn--warn {
+  color: #92400e;
+  border-color: #f59e0b55;
+}
+.icon-btn--ok {
+  color: #166534;
+  border-color: #22c55e55;
+}

@@ -1,22 +1,37 @@
-/* Dashboard con mock data y componentes visuales */
+// src/app/admin/page.tsx
+import { getDashboardStats } from "./_data/getDashboardStats";
+
 type KPI = { title: string; value: string; helper?: string };
 
-const KPIS: KPI[] = [
-  { title: "Ventas del día", value: "Q 1,250" },
-  { title: "Órdenes", value: "18" },
-  { title: "Ingresos", value: "Q 8,430", helper: "semana" },
-];
-
-const STOCK_BAJO = [
-  { producto: "Vestido Rojo S", stock: 3 },
-  { producto: "Blusa Blanca M", stock: 2 },
-  { producto: "Pantalón Negro L", stock: 4 },
-];
-
 const SEMANA = ["L", "M", "X", "J", "V", "S", "D"];
-const VENTAS = [12, 8, 14, 9, 16, 21, 7]; // datos de ejemplo
 
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+  // Datos reales
+  const stats = await getDashboardStats();
+
+  // === Generamos TUS arrays originales, pero con datos reales ===
+  const KPIS: KPI[] = [
+    {
+      title: "Ventas del día",
+      value: `Q ${stats.ingresosHoy.toLocaleString()}`,
+    },
+    { title: "Órdenes", value: `${stats.ordenesHoy}` },
+    {
+      title: "Ingresos",
+      value: `Q ${stats.ingresosSemanaTotal.toLocaleString()}`,
+      helper: "semana",
+    },
+  ];
+
+  const STOCK_BAJO = stats.lowStock.map((p) => ({
+    producto: p.nombre,
+    stock: p.stock ?? 0,
+  }));
+
+  // Serie semanal -> alturas de barras (manteniendo tu SVG)
+  const VENTAS = stats.ingresosSemana.map((d) => Math.round(d.total));
+
+  // ======= A partir de aquí, es EXACTAMENTE tu UI original =======
   const max = Math.max(...VENTAS, 1);
   const bars = VENTAS.map((v, i) => {
     const h = (v / max) * 100;
@@ -27,9 +42,7 @@ export default function AdminDashboardPage() {
     <div className="container" style={{ display: "grid", gap: "1rem" }}>
       <section className="panel" style={{ padding: "1rem 1.25rem" }}>
         <h1 style={{ fontSize: "1.6rem", marginBottom: ".5rem" }}>Dashboard</h1>
-        <p className="muted">
-          Resumen general de la operación (datos de ejemplo).
-        </p>
+        <p className="muted">Resumen general de la operación (datos reales).</p>
       </section>
 
       {/* KPIs */}
@@ -53,11 +66,7 @@ export default function AdminDashboardPage() {
 
       {/* Dos columnas: tabla + gráfico */}
       <section
-        style={{
-          display: "grid",
-          gap: "1rem",
-          gridTemplateColumns: "1fr",
-        }}
+        style={{ display: "grid", gap: "1rem", gridTemplateColumns: "1fr" }}
       >
         <article className="card" style={{ padding: "1rem" }}>
           <h3 style={{ marginBottom: ".75rem" }}>Productos con stock bajo</h3>
@@ -69,12 +78,20 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {STOCK_BAJO.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.producto}</td>
-                  <td>{r.stock}</td>
+              {STOCK_BAJO.length === 0 ? (
+                <tr>
+                  <td colSpan={2} className="muted">
+                    Todo con buen stock.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                STOCK_BAJO.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.producto}</td>
+                    <td>{r.stock}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </article>
@@ -88,7 +105,6 @@ export default function AdminDashboardPage() {
               style={{ width: "100%", height: "100%" }}
               aria-label="Gráfico de ventas semanal"
             >
-              {/* Eje base */}
               <line
                 x1="10"
                 y1="180"
@@ -97,7 +113,6 @@ export default function AdminDashboardPage() {
                 stroke="currentColor"
                 opacity=".2"
               />
-              {/* Barras */}
               {bars.map((b, idx) => (
                 <g key={idx}>
                   <rect

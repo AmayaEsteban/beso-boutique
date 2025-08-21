@@ -1,38 +1,18 @@
-export default function UsuariosPage() {
+import { prisma } from "@/lib/prisma";
+import UsuariosClient from "./_components/UsuariosClient";
+
+export const revalidate = 0; // siempre fresco en desarrollo
+
+export default async function UsuariosPage() {
+  // Cargar roles para filtros y formulario
+  const roles = await prisma.rol.findMany({
+    orderBy: { nombre: "asc" },
+  });
+
   return (
     <section className="w-full">
       <h1 className="text-2xl font-bold mb-4">Usuarios</h1>
-
-      <div className="panel p-4 mb-4">
-        <button className="btn btn--primary">Nuevo usuario</button>
-      </div>
-
-      <div className="panel p-0">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Correo</th>
-              <th>Rol</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Admin BESO</td>
-              <td>admin@beso.com</td>
-              <td>ADMIN</td>
-              <td>activo</td>
-            </tr>
-            <tr>
-              <td>Empleado 1</td>
-              <td>empleado@beso.com</td>
-              <td>EMPLEADO</td>
-              <td>activo</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <UsuariosClient roles={roles} />
     </section>
   );
 }
