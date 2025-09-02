@@ -5,7 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@beso.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -17,14 +17,14 @@ export default function LoginPage() {
     const res = await signIn("credentials", {
       email,
       password,
-      redirect: false, // manejamos la redirección manualmente
+      redirect: false, // 👈 importante para manejar redirección manual
     });
 
     setLoading(false);
 
     if (res?.ok) {
-      // si quieres: redirigir por rol desde el cliente
-      router.push("/admin");
+      alert("Inicio de sesión exitoso 🎉");
+      router.push("/"); // 👈 redirige a página principal
     } else {
       alert("Credenciales inválidas");
     }
@@ -41,6 +41,7 @@ export default function LoginPage() {
           placeholder="tucorreo@beso.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
 
         <label style={{ display: "block", margin: "12px 0 8px" }}>
@@ -52,6 +53,7 @@ export default function LoginPage() {
           placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -61,7 +63,10 @@ export default function LoginPage() {
           <button
             type="reset"
             className="btn btn--neutral"
-            onClick={() => setPassword("")}
+            onClick={() => {
+              setEmail("");
+              setPassword("");
+            }}
           >
             Limpiar
           </button>

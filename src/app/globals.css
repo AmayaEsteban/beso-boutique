@@ -1167,3 +1167,593 @@ body.admin-drawer-open .admin-nav {
   color: #166534;
   border-color: #22c55e55;
 }
+.admin-nav-group {
+  margin: 8px 0;
+}
+.admin-nav-group-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink, #eaeaea);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.admin-nav-group-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.admin-nav-group-body {
+  padding: 6px 0 0 6px;
+}
+.admin-nav-group-body .admin-nav-item {
+  margin: 6px 0 0 8px;
+}
+
+/* Contenedor principal de la sidebar (columna izquierda) */
+.admin-sidebar {
+  position: sticky; /* permanece fija en el viewport */
+  top: 0;
+  height: 100vh; /* ocupa el alto completo */
+  display: flex;
+  flex-direction: column;
+  width: 280px; /* ajusta a tu layout */
+  background: var(--sidebar, #111316);
+  border-right: 1px solid var(--stroke, rgba(255, 255, 255, 0.08));
+}
+
+/* Zona scrollable */
+.admin-sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0; /* importante para que flex permita scroll */
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch; /* iOS */
+  padding: 10px;
+}
+
+/* Footer fijo (botón logout) */
+.admin-sidebar-footer {
+  flex: 0 0 auto;
+  padding: 10px;
+  border-top: 1px solid var(--stroke, rgba(255, 255, 255, 0.08));
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.12));
+}
+
+/* Items y grupos (puedes mantener tus estilos previos) */
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-nav-item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: var(--ink, #eaeaea);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+}
+.admin-nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.admin-nav-item.danger {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.35);
+}
+
+/* Grupos */
+.admin-nav-group {
+  margin: 8px 0;
+}
+.admin-nav-group-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink, #eaeaea);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.admin-nav-group-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.admin-nav-group-body {
+  padding: 6px 0 0 6px;
+  display: grid;
+  gap: 6px;
+}
+.admin-nav-group-body .admin-nav-item {
+  margin-left: 8px;
+}
+
+/* Scrollbar bonito (WebKit/Chromium/Edge) */
+.admin-sidebar-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.admin-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.admin-sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* Firefox */
+.admin-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+}
+
+.admin-sidebar {
+  background: var(--sidebar);
+  border-right: 1px solid var(--stroke);
+  color: var(--ink);
+}
+
+.admin-sidebar-scroll {
+  /* mismo comportamiento, solo colores */
+  background: var(--sidebar);
+}
+
+.admin-sidebar-footer {
+  border-top: 1px solid var(--stroke);
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+}
+
+.admin-nav-item {
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+}
+.admin-nav-item:hover {
+  background: color-mix(in oklab, var(--ink) 6%, var(--surface));
+}
+.admin-nav-item.danger {
+  color: var(--danger);
+  border-color: color-mix(in oklab, var(--danger) 35%, transparent);
+}
+
+.admin-nav-group-btn {
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+}
+.admin-nav-group-btn:hover {
+  background: color-mix(in oklab, var(--ink) 6%, var(--surface));
+}
+.admin-nav-group-body {
+  border-left: 2px solid var(--accent);
+}
+
+/* Scrollbar adaptativa */
+.admin-sidebar-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.admin-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: var(--thumb);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.admin-sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: var(--thumb-hover);
+}
+.admin-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--thumb) transparent;
+}
+
+/* Layout base (por si el layout padre no lo tenía) */
+.admin-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+  background: var(--app-bg, transparent);
+}
+
+/* === Layout: sidebar fijo + contenido con margen === */
+:root {
+  --aside-w: 280px;
+} /* ajusta el ancho a tu diseño */
+
+/* Si tu <aside> ya tiene .admin-sidebar, agrega además .fixed */
+.admin-sidebar.fixed {
+  position: fixed;
+  inset: 0 auto 0 0; /* top right bottom left */
+  width: var(--aside-w);
+  z-index: 40; /* por encima del contenido */
+}
+
+/* El wrapper del contenido debe tener esta clase */
+.admin-main {
+  margin-left: var(--aside-w); /* << evita el solapamiento */
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--app-bg, transparent);
+  min-width: 0; /* evita overflow horizontal al usar grid/flex */
+}
+
+/* Transiciones suaves al cambiar de tamaño/estado */
+.admin-main,
+.admin-sidebar.fixed {
+  transition: margin-left 0.2s ease, transform 0.2s ease;
+}
+
+/* --- Responsive: en móvil el sidebar actúa como drawer (overlay) --- */
+@media (max-width: 1024px) {
+  .admin-sidebar.fixed {
+    width: min(92vw, 320px);
+    transform: translateX(-100%); /* oculto por defecto como drawer */
+  }
+  .admin-sidebar.fixed.open {
+    transform: none; /* muéstralo cuando agregues la clase .open */
+  }
+  .admin-main {
+    margin-left: 0; /* contenido ocupa todo el ancho en móvil */
+  }
+}
+/* ====== Variables de layout ====== */
+:root {
+  --aside-w: 280px; /* ancho del sidebar en desktop */
+  --admin-gap: 0; /* puedes usar gap si lo necesitas */
+}
+
+/* ====== Shell general ====== */
+.admin-shell {
+  position: relative;
+  min-height: calc(100vh - var(--header-h, 64px));
+  /* Desktop: el contenido deja margen para el sidebar fijo */
+}
+
+@media (min-width: 1024px) {
+  .admin-shell {
+    display: block;
+  }
+}
+
+/* ====== Sidebar ====== */
+.admin-sidebar {
+  position: fixed;
+  top: var(--header-h, 64px); /* si tu header es sticky; ajusta si no */
+  left: 0;
+  bottom: 0;
+  width: var(--aside-w);
+  z-index: 40;
+  /* Fondo y bordes respetando tema claro/oscuro */
+  background: var(--panel, #111); /* define --panel en tu tema */
+  color: var(--ink, #fff);
+  border-right: 1px solid var(--stroke, rgba(0, 0, 0, 0.08));
+
+  /* Scroll interno para ver todos los módulos */
+  overflow: hidden; /* oculta el scrollbar padre */
+}
+
+.admin-sidebar .admin-nav {
+  height: 100%;
+  overflow: auto; /* scroll del menú */
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* ====== Contenido ====== */
+.admin-content {
+  min-width: 0; /* evita overflow horizontal en grids */
+  padding: 24px;
+  background: var(--app-bg, #fff);
+}
+
+/* Desktop: el contenido compensa el sidebar */
+@media (min-width: 1024px) {
+  .admin-content {
+    margin-left: var(--aside-w);
+  }
+}
+
+/* ====== Drawer móvil ====== */
+@media (max-width: 1023.98px) {
+  .admin-sidebar {
+    width: min(92vw, 320px);
+    top: var(--header-h, 56px);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  /* Usa la clase en el shell para abrir/cerrar */
+  .admin-shell.drawer-open .admin-sidebar {
+    transform: translateX(0);
+  }
+
+  .admin-content {
+    margin-left: 0;
+    padding: 16px;
+  }
+
+  /* Backdrop */
+  .admin-backdrop {
+    position: fixed;
+    inset: var(--header-h, 56px) 0 0 0;
+    z-index: 35;
+    background: rgba(0, 0, 0, 0.45);
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* ====== Modo claro / oscuro (ejemplos; ajusta a tu tema) ====== */
+:root[data-theme="light"] {
+  --panel: #fff;
+  --ink: #111;
+  --stroke: rgba(0, 0, 0, 0.08);
+  --app-bg: #f7f7f8;
+}
+
+:root[data-theme="dark"] {
+  --panel: #121416;
+  --ink: #e9eaee;
+  --stroke: rgba(255, 255, 255, 0.08);
+  --app-bg: #0c0d0f;
+}
+
+/* Opcional: estilo del scrollbar (suave y discreto) */
+.admin-sidebar .admin-nav::-webkit-scrollbar {
+  width: 10px;
+}
+.admin-sidebar .admin-nav::-webkit-scrollbar-thumb {
+  background: var(--stroke);
+  border-radius: 8px;
+}
+.admin-sidebar .admin-nav {
+  scrollbar-width: thin;
+  scrollbar-color: var(--stroke) transparent;
+}
+
+/* ===== Variables ===== */
+:root {
+  --aside-w: 264px; /* ancho del sidebar en desktop */
+  --header-h: 64px; /* se sobrescribe dinámicamente */
+  --content-gutter: 16px; /* separación sidebar → contenido */
+}
+
+/* ===== Shell: empuja todo debajo del header ===== */
+.admin-shell {
+  position: relative;
+  min-height: 100vh;
+  padding-top: var(--header-h); /* evita que el header tape el contenido */
+  background: var(--app-bg, #fff);
+}
+
+/* ===== Sidebar ===== */
+.admin-sidebar {
+  position: fixed;
+  top: var(--header-h); /* nunca choca con el header */
+  left: 0;
+  bottom: 0;
+  width: var(--aside-w);
+  z-index: 40;
+  background: var(--panel, #111);
+  color: var(--ink, #fff);
+  border-right: 1px solid var(--stroke, rgba(0, 0, 0, 0.08));
+  overflow: hidden;
+}
+
+/* scroll interno del menú */
+.admin-sidebar .admin-nav {
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* ===== Contenido ===== */
+.admin-content {
+  min-width: 0;
+  padding: 24px; /* reduce si quieres */
+  /* En móviles no dejamos margen izquierdo */
+  margin-left: 0;
+}
+
+/* En desktop: compensamos el sidebar con un gutter pequeño */
+@media (min-width: 1024px) {
+  .admin-content {
+    margin-left: calc(var(--aside-w) + var(--content-gutter));
+  }
+}
+
+/* ===== Drawer móvil ===== */
+@media (max-width: 1023.98px) {
+  .admin-sidebar {
+    width: min(92vw, 320px);
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+  }
+  .admin-shell.drawer-open .admin-sidebar {
+    transform: translateX(0);
+  }
+  .admin-backdrop {
+    position: fixed;
+    inset: var(--header-h) 0 0 0;
+    z-index: 35;
+    background: rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* ===== Tema claro/oscuro (de ejemplo) ===== */
+:root[data-theme="light"] {
+  --panel: #fff;
+  --ink: #121417;
+  --stroke: rgba(0, 0, 0, 0.08);
+  --app-bg: #f6f7f8;
+}
+:root[data-theme="dark"] {
+  --panel: #121416;
+  --ink: #e9eaee;
+  --stroke: rgba(255, 255, 255, 0.1);
+  --app-bg: #0c0d0f;
+}
+
+/* Scrollbar sutil en el nav */
+.admin-sidebar .admin-nav::-webkit-scrollbar {
+  width: 10px;
+}
+.admin-sidebar .admin-nav::-webkit-scrollbar-thumb {
+  background: var(--stroke);
+  border-radius: 8px;
+}
+.admin-sidebar .admin-nav {
+  scrollbar-width: thin;
+  scrollbar-color: var(--stroke) transparent;
+}
+
+/* Ocultar watermark de Next en modo dev */
+#__next-build-watcher,
+#__next-prerender-indicator {
+  display: none !important;
+}
+
+/* Ocultar botón flotante de nextjs-devtools y otros indicadores de dev */
+#nextjs-devtools,
+#nextjs-devtools-toggle,
+[data-nextjs-devtools],
+#__next-build-watcher,
+#__next-prerender-indicator {
+  display: none !important;
+}
+
+/* ---- Forzar todas las opciones visibles en móvil ---- */
+@media (max-width: 1024px) {
+  /* Cuando el sidebar está abierto y con la marca .open-all */
+  .admin-sidebar.is-open.open-all .admin-submenu {
+    /* muestra SIEMPRE el contenedor de opciones del grupo */
+    display: block !important;
+    max-height: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    padding-top: 6px;
+  }
+
+  /* Si usas transición por height/opacity, evita clipping */
+  .admin-sidebar.is-open.open-all .admin-submenu > * {
+    /* por si hay grids o gaps internos */
+    animation: none !important;
+  }
+
+  /* Si usas un ícono/chevron de despliegue, déjalo “abierto” */
+  .admin-sidebar.is-open.open-all .admin-group-header .chev {
+    transform: rotate(90deg) !important;
+  }
+}
+
+/* =========================
+   Sidebar móvil: forzar visible y scrolleable
+========================= */
+
+/* Estructura y capa por encima del contenido */
+.admin-sidebar {
+  background: var(--panel, #fff);
+  color: var(--ink, #111);
+  z-index: 1000;
+}
+
+@media (max-width: 1023px) {
+  .admin-shell {
+    display: block; /* evita grid recortando el aside */
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    left: 0;
+    top: var(--header-h, 64px);
+    width: 86vw;
+    max-width: 320px;
+    height: calc(100vh - var(--header-h, 64px));
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    overflow: hidden; /* footer fijo + scroll interno arriba */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  .admin-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  /* Área scrolleable real del listado */
+  .admin-sidebar .admin-sidebar-scroll {
+    height: calc(100vh - var(--header-h, 64px) - 64px); /* 64 ≈ alto footer */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Footer fijo al fondo del drawer */
+  .admin-sidebar-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px;
+    background: var(--surface-2, #0f1115);
+  }
+
+  /* === LO CLAVE: abrir submenús cuando el drawer está abierto === */
+  .admin-sidebar.open-all .admin-nav-group-body {
+    display: block !important;
+    max-height: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* Si usas transiciones de acordeón, elimínalas en móvil-forzado */
+  .admin-sidebar.open-all .admin-nav-group-body,
+  .admin-sidebar.open-all .admin-nav-group-btn .chev {
+    transition: none !important;
+  }
+}
+
+/* Evitar que el backdrop/overflow del body tape el contenido */
+.no-scroll {
+  overflow: hidden;
+}
+
+/* Por si alguna regla heredada pone el texto transparente en el drawer */
+.admin-sidebar,
+.admin-sidebar * {
+  color: inherit;
+}
+
+/* ancho del sidebar (ya lo usas en el layout). Ajusta si fuera distinto */
+:root {
+  --sidebar-w: 260px;
+}
+
+/* Espaciador del header: solo desktop */
+.header-spacer {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .header-spacer {
+    display: block;
+    flex: 0 0 var(--sidebar-w);
+    width: var(--sidebar-w);
+  }
+}
+
+/* Asegura que los elementos del header se distribuyen correctamente */
+.site-header .header-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}

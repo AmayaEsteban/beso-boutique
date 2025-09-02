@@ -1,8 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Header from "@/components/ui/header"; //header público
+import Header from "@/components/ui/header"; // header público
 import "./globals.css";
+import { SessionProvider } from "next-auth/react";
 
 export default function RootLayout({
   children,
@@ -15,9 +16,11 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        {/* Header público sólo si NO estamos en /admin */}
-        {!isAdminRoute && <Header />}
-        <main className="page">{children}</main>
+        <SessionProvider>
+          {/* Header público sólo si NO estamos en /admin */}
+          {!isAdminRoute && <Header />}
+          <main className="page">{children}</main>
+        </SessionProvider>
       </body>
     </html>
   );

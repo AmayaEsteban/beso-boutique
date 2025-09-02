@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
@@ -11,71 +11,78 @@ export default function AdminLayout({
 }) {
   const [open, setOpen] = useState(false);
 
+  // mide la altura real del header y la expone como --header-h
+  useEffect(() => {
+    const setHeaderVar = () => {
+      const el =
+        (document.querySelector("#admin-header") as HTMLElement) ||
+        (document.querySelector(".admin-header") as HTMLElement);
+      const h = el?.offsetHeight ?? 64;
+      document.documentElement.style.setProperty("--header-h", `${h}px`);
+    };
+    setHeaderVar();
+    const ro = new ResizeObserver(setHeaderVar);
+    const target =
+      (document.querySelector("#admin-header") as HTMLElement) ||
+      (document.querySelector(".admin-header") as HTMLElement);
+    if (target) ro.observe(target);
+    const onResize = () => setHeaderVar();
+    window.addEventListener("resize", onResize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  // si cambias a desktop, cierra el drawer móvil
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 1024 && open) setOpen(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [open]);
+
+  // bloquear scroll del body cuando drawer abierto
+  useEffect(() => {
+    if (open) {
+      document.body.classList.add("no-scroll");
+    } else {
+      document.body.classList.remove("no-scroll");
+    }
+    return () => document.body.classList.remove("no-scroll");
+  }, [open]);
+
   return (
     <>
-      <AdminHeader onToggleSidebar={() => setOpen((v) => !v)} />
-
-      <div className="admin-shell">
-        <aside className={`admin-sidebar ${open ? "is-open" : ""}`}>
-          <AdminSidebar onNavigate={() => setOpen(false)} />
-        </aside>
-        {open && (
-          <div
-            className="admin-fallback-list"
-            role="menu"
-            aria-label="Menú administrador"
-          >
-            <a href="/admin/productos" className="admin-fallback-item">
-              Productos
-            </a>
-            <a href="/admin/categorias" className="admin-fallback-item">
-              Categorias
-            </a>
-            <a href="/admin/clientes" className="admin-fallback-item">
-              Clientes
-            </a>
-            <a href="/admin/usuarios" className="admin-fallback-item">
-              Usuarios
-            </a>
-            <a href="/admin/ventas-online" className="admin-fallback-item">
-              Ventas online
-            </a>
-            <a href="/admin/ventas-tienda" className="admin-fallback-item">
-              Ventas En tienda
-            </a>
-            <a href="/admin/proveedores" className="admin-fallback-item">
-              Proveedores
-            </a>
-            <a href="/admin/reportes" className="admin-fallback-item">
-              Reportes
-            </a>
-            <a href="/admin/configuracion" className="admin-fallback-item">
-              Configuracion
-            </a>
-            <a href="/admin/seguridad" className="admin-fallback-item">
-              Seguridad
-            </a>
-
-            <button
-              className="admin-fallback-item danger"
-              onClick={() => location.assign("/api/auth/signout?callbackUrl=/")}
-            >
-              Log-out
-            </button>
-          </div>
-        )}
-
-        <section className="admin-content">{children}</section>
+      <div id="admin-header">
+        <AdminHeader onToggleSidebar={() => setOpen((v) => !v)} />
       </div>
 
-      {/* Backdrop para móvil */}
-      {open && (
-        <button
-          className="admin-backdrop"
-          onClick={() => setOpen(false)}
-          aria-label="Cerrar menú"
-        />
-      )}
+      <div className={`admin-shell ${open ? "drawer-open" : ""}`}>
+        {/* Sidebar fijo (desktop) / drawer (móvil) */}
+        <aside
+          className={`admin-sidebar ${open ? "is-open open-all" : ""}`}
+          aria-label="Menú administrador"
+        >
+          {/* IMPORTANTE: AdminSidebar ya NO rinde su propio <aside> */}
+          <AdminSidebar onNavigate={() => setOpen(false)} />
+        </aside>
+
+        {/* Contenido */}
+        <main className="admin-content" role="main">
+          {children}
+        </main>
+
+        {/* Backdrop móvil */}
+        {open && (
+          <button
+            className="admin-backdrop"
+            onClick={() => setOpen(false)}
+            aria-label="Cerrar menú"
+          />
+        )}
+      </div>
     </>
   );
 }

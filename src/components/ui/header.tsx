@@ -2,11 +2,49 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ThemeToggle from "@/components/ui/theme-toggle";
+import { useSession, signOut } from "next-auth/react";
+
+/* Icono simple de usuario */
+function UserIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" {...props} aria-hidden>
+      <circle cx="12" cy="8" r="4" stroke="currentColor" fill="none" />
+      <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" fill="none" />
+    </svg>
+  );
+}
+
+type Role = "CLIENTE" | "ADMIN" | "EMPLEADO" | "PROVEEDOR" | undefined;
 
 export default function Header() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false); // menú móvil
+  const [menuOpen, setMenuOpen] = useState(false); // dropdown usuario (desktop)
+
+  const { data: session, status } = useSession();
+  const role = (session?.user as { role?: Role } | undefined)?.role;
+  const hasSession = status === "authenticated";
+  const isCliente = role === "CLIENTE";
+
+  // cerrar dropdown al click fuera
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  const firstName = (session?.user?.name ?? session?.user?.email ?? "Mi cuenta")
+    .toString()
+    .split(" ")[0];
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/" });
+  };
 
   return (
     <header className="site-header">
@@ -73,10 +111,90 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Login */}
-          <Link href="/login" className="btn primary" aria-label="Ir al login">
-            Login
-          </Link>
+          {/* Login / Menú usuario (desktop) */}
+          {!hasSession ? (
+            <Link
+              href="/login"
+              className="btn primary"
+              aria-label="Ir al login"
+            >
+              Login
+            </Link>
+          ) : (
+            <div ref={menuRef} style={{ position: "relative" }}>
+              <button
+                className="btn ghost"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((v) => !v)}
+                title="Cuenta"
+                style={{ display: "flex", alignItems: "center", gap: 8 }}
+              >
+                <UserIcon />
+                <span className="muted" style={{ fontSize: ".9rem" }}>
+                  {firstName}
+                </span>
+              </button>
+
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="panel"
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    marginTop: 6,
+                    width: 240,
+                    padding: 8,
+                    display: "grid",
+                    gap: 6,
+                    border: "1px solid var(--stroke)",
+                    boxShadow: "0 10px 30px rgba(0,0,0,.15)",
+                    zIndex: 20,
+                  }}
+                >
+                  <div className="muted" style={{ fontSize: ".8rem" }}>
+                    {isCliente ? "Cliente" : role ?? "Usuario"}
+                  </div>
+                  <div
+                    style={{
+                      height: 1,
+                      background: "var(--stroke)",
+                      margin: "4px 0 6px",
+                    }}
+                  />
+
+                  {/* Opciones para cliente */}
+                  {isCliente ? (
+                    <>
+                      <Link className="btn ghost" href="/cuenta">
+                        Mis datos
+                      </Link>
+                      <Link className="btn ghost" href="/cuenta/historial">
+                        Historial de compras
+                      </Link>
+                    </>
+                  ) : (
+                    // Para otros roles podrías llevarlos al admin
+                    <Link className="btn ghost" href="/admin">
+                      Ir a Admin
+                    </Link>
+                  )}
+
+                  <div
+                    style={{
+                      height: 1,
+                      background: "var(--stroke)",
+                      margin: "6px 0 4px",
+                    }}
+                  />
+                  <button className="btn danger" onClick={handleLogout}>
+                    Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Hamburguesa (solo móviles y tablets) */}
           <button
@@ -131,13 +249,46 @@ export default function Header() {
             >
               Carrito
             </Link>
-            <Link
-              href="/login"
-              onClick={() => setOpen(false)}
-              className="btn primary"
-            >
-              Login
-            </Link>
+
+            {/* Bloque de sesión en móvil */}
+            {!hasSession ? (
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="btn primary"
+              >
+                Login
+              </Link>
+            ) : (
+              <div className="grid gap-2 mt-2">
+                {isCliente ? (
+                  <>
+                    <Link href="/cuenta" onClick={() => setOpen(false)}>
+                      Mis datos
+                    </Link>
+                    <Link
+                      href="/cuenta/historial"
+                      onClick={() => setOpen(false)}
+                    >
+                      Historial de compras
+                    </Link>
+                  </>
+                ) : (
+                  <Link href="/admin" onClick={() => setOpen(false)}>
+                    Ir a Admin
+                  </Link>
+                )}
+                <button
+                  className="btn danger"
+                  onClick={async () => {
+                    setOpen(false);
+                    await signOut({ callbackUrl: "/" });
+                  }}
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
           </nav>
         </div>
       )}

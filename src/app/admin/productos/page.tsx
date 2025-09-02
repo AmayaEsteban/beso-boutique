@@ -13,18 +13,16 @@ type Categoria = CategoriaModel;
 type OrderField = "id" | "nombre" | "precio";
 type Dir = "asc" | "desc";
 
+/** Formulario SOLO con campos editables del producto (no stock/talla/color). */
 type FormState = {
   nombre: string;
   descripcion: string;
   precio: string; // se parsea a number al enviar
-  stock: string; // se parsea a number al enviar
-  talla: string; // "S,M,L"
-  color: string;
   imagenUrl: string;
   idCategoria: string; // select -> se convierte a number | undefined
 };
 
-/* ==== Iconos ligeros (inline, mismos que en usuarios/categorías) ==== */
+/* ==== Iconos ligeros (inline) ==== */
 function PdfIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" {...props} aria-hidden>
@@ -96,7 +94,6 @@ function CloseIcon(props: React.SVGProps<SVGSVGElement>) {
 const toNumber = (v: unknown): number => {
   if (typeof v === "number") return v;
   if (typeof v === "string") return parseFloat(v);
-  // Prisma Decimal u otros: usar toString()
   try {
     return parseFloat(String(v));
   } catch {
@@ -133,9 +130,6 @@ export default function ProductosPage() {
     nombre: "",
     descripcion: "",
     precio: "",
-    stock: "",
-    talla: "",
-    color: "",
     imagenUrl: "",
     idCategoria: "",
   });
@@ -182,9 +176,6 @@ export default function ProductosPage() {
       nombre: "",
       descripcion: "",
       precio: "",
-      stock: "",
-      talla: "",
-      color: "",
       imagenUrl: "",
       idCategoria: "",
     });
@@ -197,9 +188,6 @@ export default function ProductosPage() {
       nombre: p.nombre ?? "",
       descripcion: p.descripcion ?? "",
       precio: String(toNumber(p.precio)),
-      stock: String(typeof p.stock === "number" ? p.stock : p.stock ?? ""),
-      talla: p.talla ?? "",
-      color: p.color ?? "",
       imagenUrl: p.imagenUrl ?? "",
       idCategoria: p.categoriaId ? String(p.categoriaId) : "",
     });
@@ -211,7 +199,6 @@ export default function ProductosPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validaciones rápidas en UI
     if (!form.nombre.trim()) {
       alert("El nombre es requerido.");
       return;
@@ -222,22 +209,14 @@ export default function ProductosPage() {
       alert("Precio inválido.");
       return;
     }
-    const stockNum =
-      form.stock.trim() === "" ? null : Number(form.stock.trim());
-    if (stockNum === null || !Number.isInteger(stockNum) || stockNum < 0) {
-      alert("Stock inválido (entero no negativo).");
-      return;
-    }
 
     const payload = {
       nombre: form.nombre.trim(),
       descripcion: form.descripcion.trim() ? form.descripcion.trim() : null,
       precio: precioNum,
-      stock: stockNum,
-      talla: form.talla.trim() ? form.talla.trim() : undefined, // el backend valida "S,M,L"
-      color: form.color.trim() ? form.color.trim() : null,
       imagenUrl: form.imagenUrl.trim() ? form.imagenUrl.trim() : null,
       idCategoria: form.idCategoria ? Number(form.idCategoria) : undefined,
+      // NO enviar stock/talla/color: se sincronizan desde producto_variantes por triggers/SP
     };
 
     const url = editing
@@ -638,10 +617,10 @@ export default function ProductosPage() {
                     src={viewing.imagenUrl}
                     alt={viewing.nombre}
                     style={{
-                      maxWidth: "100px", // ancho máximo controlado
-                      maxHeight: "100px", // alto máximo para evitar que se deforme
+                      maxWidth: "100px",
+                      maxHeight: "100px",
                       borderRadius: 8,
-                      objectFit: "cover", // mantiene proporción, recortando si es necesario
+                      objectFit: "cover",
                       display: "block",
                       marginTop: "8px",
                     }}
@@ -745,49 +724,7 @@ export default function ProductosPage() {
                     title="Solo números y hasta 2 decimales"
                   />
                 </label>
-                <label className="grid gap-1">
-                  <span>Stock</span>
-                  <input
-                    className="input"
-                    inputMode="numeric"
-                    pattern="^[0-9]+$"
-                    placeholder="0"
-                    value={form.stock}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, stock: e.target.value }))
-                    }
-                    required
-                    title="Solo enteros no negativos"
-                  />
-                </label>
-              </div>
 
-              <label className="grid gap-1">
-                <span>Tallas (separadas por coma, ej: S,M,L)</span>
-                <input
-                  className="input"
-                  placeholder="S,M,L"
-                  value={form.talla}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, talla: e.target.value }))
-                  }
-                />
-              </label>
-
-              <div
-                className="grid gap-3"
-                style={{ gridTemplateColumns: "1fr 1fr" }}
-              >
-                <label className="grid gap-1">
-                  <span>Color</span>
-                  <input
-                    className="input"
-                    value={form.color}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, color: e.target.value }))
-                    }
-                  />
-                </label>
                 <label className="grid gap-1">
                   <span>Imagen URL</span>
                   <input
@@ -819,6 +756,67 @@ export default function ProductosPage() {
                   ))}
                 </select>
               </label>
+
+              {/* Derivados + Shortcuts (solo al editar, para que al crear no confunda) */}
+              {editing && (
+                <div
+                  className="grid gap-2 p-3 rounded-md"
+                  style={{ background: "var(--soft)" }}
+                >
+                  <div className="muted text-sm">
+                    Valores derivados (solo lectura):
+                  </div>
+
+                  <div
+                    className="grid"
+                    style={{ gridTemplateColumns: "130px 1fr" }}
+                  >
+                    <span className="muted">Stock total</span>
+                    <span>
+                      {typeof editing.stock === "number"
+                        ? editing.stock
+                        : editing.stock ?? 0}
+                    </span>
+                  </div>
+
+                  <div
+                    className="grid"
+                    style={{ gridTemplateColumns: "130px 1fr" }}
+                  >
+                    <span className="muted">Tallas</span>
+                    <span>{editing.talla ?? "—"}</span>
+                  </div>
+
+                  <div
+                    className="grid"
+                    style={{ gridTemplateColumns: "130px 1fr" }}
+                  >
+                    <span className="muted">Colores</span>
+                    <span>{editing.color ?? "—"}</span>
+                  </div>
+
+                  <div className="flex gap-8 mt-2">
+                    <a
+                      className="link"
+                      href={`/admin/variantes?producto=${editing.id}`}
+                    >
+                      Gestionar Variantes
+                    </a>
+                    <a
+                      className="link"
+                      href={`/admin/imagenes-productos?producto=${editing.id}`}
+                    >
+                      Imágenes
+                    </a>
+                    <a
+                      className="link"
+                      href={`/admin/clasificacion-abc?producto=${editing.id}`}
+                    >
+                      Clasificación ABC
+                    </a>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 mt-2">
                 <button

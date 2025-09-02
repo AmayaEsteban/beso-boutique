@@ -1,18 +1,16 @@
+// src/lib/validators/user.ts
 import { z } from "zod";
 
 export const userCreateSchema = z.object({
   nombre: z.string().min(2, "Nombre muy corto"),
-  email: z.string().email("Email no válido"),
+  apellidos: z.string().trim().optional().nullable(),
+  email: z.string().email(),
   password: z.string().min(6, "Mínimo 6 caracteres"),
-  idRol: z.coerce.number().int().positive("Rol requerido"),
-  estado: z.enum(["activo", "inactivo"]).default("activo"),
+  idRol: z.number().int().positive(),
+  estado: z.enum(["activo", "inactivo"]),
+  // opcionales
+  dpi: z.string().trim().optional().nullable(),
+  nit: z.string().trim().optional().nullable(),
+  direccion: z.string().trim().optional().nullable(),
 });
-
-export const userUpdateSchema = z.object({
-  nombre: z.string().min(2).optional(),
-  email: z.string().email().optional(),
-  // password es opcional en edición; si viene, se rehace hash
-  password: z.string().min(6).optional(),
-  idRol: z.coerce.number().int().positive().optional(),
-  estado: z.enum(["activo", "inactivo"]).optional(),
-});
+export type UserCreateInput = z.infer<typeof userCreateSchema>;

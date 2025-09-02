@@ -13,6 +13,9 @@ export default function AdminHeader({ onToggleSidebar }: Props) {
   return (
     <header className="site-header">
       <div className="container header-inner">
+        {/* Espaciador para alinear con el sidebar en desktop */}
+        <div className="header-spacer" aria-hidden />
+
         {/* Botón menú (móvil) */}
         <button
           className="hamburger md:hidden"
