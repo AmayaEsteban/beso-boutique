@@ -1757,3 +1757,24 @@ body.admin-drawer-open .admin-nav {
   align-items: center;
   gap: 0.75rem;
 }
+
+/* ===== CMS public page local theme inversion (server-safe) ===== */
+.cms-theme-invert {
+  --bg: var(--fg);
+  --panel: var(--bg-elev);
+  --text: var(--bg);
+  --muted: var(--muted-contrast, #666);
+  background: var(--bg);
+  color: var(--text);
+}
+.cms-theme-invert .panel {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--stroke);
+}
+.cms-theme-invert .link {
+  color: var(--primary);
+}
+.cms-theme-invert .muted {
+  color: var(--muted);
+}

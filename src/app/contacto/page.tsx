@@ -1,10 +1,141 @@
+import { prisma } from "@/lib/prisma";
+import ContactForm from "@/components/ui/contact-form"; // ← IMPORTA EL FORM
+
 export const metadata = {
   title: "Contáctanos | BESO Boutique",
   description:
     "Comunícate con BESO Boutique: teléfono, WhatsApp, correo, redes sociales, horarios y ubicación.",
 };
 
-export default function ContactoPage() {
+// ==== Iconos (SVG, heredan currentColor para light/dark) ====
+function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden {...props}>
+      <path
+        d="M4 5c0-1.1.9-2 2-2h1.2c.5 0 .9.3 1.1.7l1.2 2.6c.2.4.1.9-.2 1.2L8.2 9.4c1 2 2.6 3.6 4.6 4.6l1.9-1.1c.4-.3.9-.3 1.3-.1l2.6 1.2c.4.2.7.6.7 1.1V18c0 1.1-.9 2-2 2h-.5C10.5 20 4 13.5 4.1 6.5V5z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+function WhatsIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden {...props}>
+      <path
+        d="M3 20l1.4-4.3A8 8 0 1012 20a8.3 8.3 0 01-3.9-1L3 20z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.5 8.7c.3-1 .7-1 1.2-.8.5.2 1.2 1.5 1.3 1.7.1.2 0 .5-.2.7l-.4.4c.5 1 1.5 1.9 2.6 2.4l.5-.5c.2-.2.5-.3.7-.2.2.1 1.4.8 1.6 1.3.2.5.2.9-.8 1.2-1.1.4-3.1.2-5.2-1.8s-2.2-4-1.9-4.4z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+function MailIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden {...props}>
+      <rect
+        x="3.5"
+        y="5"
+        width="17"
+        height="14"
+        rx="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M4.5 7l7.4 5.5a1 1 0 001.2 0L20.5 7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+function ShareIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden {...props}>
+      <circle
+        cx="18"
+        cy="5"
+        r="2.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        fill="none"
+      />
+      <circle
+        cx="6"
+        cy="12"
+        r="2.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        fill="none"
+      />
+      <circle
+        cx="18"
+        cy="19"
+        r="2.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        fill="none"
+      />
+      <path d="M8 11l8-5M8 13l8 5" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+function MapPinIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden {...props}>
+      <path
+        d="M12 22s7-6.1 7-12a7 7 0 10-14 0c0 5.9 7 12 7 12z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle cx="12" cy="10" r="2.5" fill="currentColor" />
+    </svg>
+  );
+}
+function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden {...props}>
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M12 7v5l3 2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+// ==== Página (Server Component, lee Prisma directamente) ====
+export default async function ContactoPage() {
+  const data = await prisma.contacto.findUnique({ where: { id: 1 } });
+
+  const telHref =
+    data?.telefono?.replace(/\s+/g, "")?.replace(/[^\d+]/g, "") ?? null;
+  const waHref =
+    data?.whatsapp?.replace(/\s+/g, "")?.replace(/[^\d+]/g, "") ?? null;
+
   return (
     <section
       className="container"
@@ -22,105 +153,143 @@ export default function ContactoPage() {
         className="grid gap-6 mb-6"
         style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}
       >
-        <article className="panel p-5">
-          <h3 className="font-bold mb-1">Teléfono</h3>
-          <p>
-            <a className="link" href="tel:+50255555555">
-              (+502) 5555-5555
-            </a>
-          </p>
-          <p className="muted text-sm">L–V 9:00–18:00 · S 9:00–13:00</p>
-        </article>
-
-        <article className="panel p-5">
-          <h3 className="font-bold mb-1">WhatsApp</h3>
-          <p>
-            <a
-              className="btn ghost"
-              href="https://wa.me/50255555555?text=Hola%20BESO,%20necesito%20ayuda"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Escribir por WhatsApp
-            </a>
-          </p>
-          <p className="muted text-sm">Respuesta usual en horas hábiles.</p>
-        </article>
-
-        <article className="panel p-5">
-          <h3 className="font-bold mb-1">Correo</h3>
-          <p>
-            <a className="link" href="mailto:soporte@beso.com">
-              soporte@beso.com
-            </a>
-          </p>
-          <p className="muted text-sm">Consultas de pedidos y devoluciones.</p>
-        </article>
-
-        <article className="panel p-5">
-          <h3 className="font-bold mb-1">Redes sociales</h3>
-          <ul className="grid gap-2">
-            <li>
-              <a
-                className="link"
-                href="https://instagram.com/beso.boutique"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Instagram
+        {/* Teléfono */}
+        {data?.telefono && (
+          <article className="panel p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <PhoneIcon />
+              <h3 className="font-bold">Teléfono</h3>
+            </div>
+            <p>
+              <a className="link" href={`tel:${telHref}`}>
+                {data.telefono}
               </a>
-            </li>
-            <li>
+            </p>
+            {data?.horario && (
+              <p className="muted text-sm flex items-center gap-1 mt-1">
+                <ClockIcon /> {data.horario}
+              </p>
+            )}
+          </article>
+        )}
+
+        {/* WhatsApp */}
+        {data?.whatsapp && (
+          <article className="panel p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <WhatsIcon />
+              <h3 className="font-bold">WhatsApp</h3>
+            </div>
+            <p>
               <a
-                className="link"
-                href="https://facebook.com/beso.boutique"
+                className="btn ghost"
+                href={`https://wa.me/${waHref}?text=Hola%20BESO,%20necesito%20ayuda`}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
-                Facebook
+                Escribir por WhatsApp
               </a>
-            </li>
-            <li>
-              <a
-                className="link"
-                href="https://tiktok.com/@beso.boutique"
-                target="_blank"
-                rel="noreferrer"
-              >
-                TikTok
+            </p>
+            {data?.horario && (
+              <p className="muted text-sm mt-1">
+                Respuesta usual en horas hábiles.
+              </p>
+            )}
+          </article>
+        )}
+
+        {/* Correo */}
+        {data?.email && (
+          <article className="panel p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <MailIcon />
+              <h3 className="font-bold">Correo</h3>
+            </div>
+            <p>
+              <a className="link" href={`mailto:${data.email}`}>
+                {data.email}
               </a>
-            </li>
-          </ul>
-        </article>
+            </p>
+            <p className="muted text-sm">
+              Consultas de pedidos y devoluciones.
+            </p>
+          </article>
+        )}
+
+        {/* Redes */}
+        {(data?.instagram || data?.facebook || data?.tiktok) && (
+          <article className="panel p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <ShareIcon />
+              <h3 className="font-bold">Redes sociales</h3>
+            </div>
+            <ul className="grid gap-2">
+              {data.instagram && (
+                <li>
+                  <a
+                    className="link"
+                    href={data.instagram}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Instagram
+                  </a>
+                </li>
+              )}
+              {data.facebook && (
+                <li>
+                  <a
+                    className="link"
+                    href={data.facebook}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Facebook
+                  </a>
+                </li>
+              )}
+              {data.tiktok && (
+                <li>
+                  <a
+                    className="link"
+                    href={data.tiktok}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    TikTok
+                  </a>
+                </li>
+              )}
+            </ul>
+          </article>
+        )}
       </div>
 
       {/* Dirección + mapa */}
       <div className="grid gap-6" style={{ gridTemplateColumns: "1fr 1fr" }}>
-        <article className="panel p-5">
-          <h3 className="font-bold mb-2">Nuestra ubicación</h3>
-          <p className="mb-2">
-            Zona 14, Ciudad de Guatemala <br />
-            Punto de entrega y bodega (visitas con cita).
-          </p>
-          <p className="muted text-sm">
-            *Estos datos son de ejemplo. Puedes pasarnos los reales y los
-            cambiamos en segundos.
-          </p>
-        </article>
+        {data?.direccion && (
+          <article className="panel p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPinIcon />
+              <h3 className="font-bold">Nuestra ubicación</h3>
+            </div>
+            <p className="mb-2">{data.direccion}</p>
+            <p className="muted text-sm"></p>
+          </article>
+        )}
 
         <article className="panel p-0 overflow-hidden">
-          <iframe
-            title="Mapa BESO"
-            width="100%"
-            height="320"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            // Mapa de ejemplo — reemplaza cuando tengas la dirección final
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3876!2d-90.51!3d14.61!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sBESO!5e0!3m2!1ses!2sgt!4v0000000000"
-            style={{ border: 0 }}
-            aria-label="Mapa de BESO"
-          />
+          {data?.mapaEmbed ? (
+            <div dangerouslySetInnerHTML={{ __html: data.mapaEmbed }} />
+          ) : (
+            <div className="p-5 muted">Mapa no configurado.</div>
+          )}
         </article>
+      </div>
+
+      {/* >>> Formulario plegable para enviar mensaje <<< */}
+      <div className="mt-6">
+        <ContactForm />
       </div>
     </section>
   );

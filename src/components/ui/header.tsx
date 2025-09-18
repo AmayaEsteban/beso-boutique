@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import { useSession, signOut } from "next-auth/react";
 
-/* Icono simple de usuario */
+/* ===== Iconos ===== */
 function UserIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" {...props} aria-hidden>
@@ -15,17 +15,51 @@ function UserIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+function HeartIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" {...props} aria-hidden>
+      <path
+        d="M12 21s-7.5-4.6-9.4-8.6C1.7 9.8 3.1 7 5.8 6.3c1.7-.4 3.5.3 4.6 1.7 1.1-1.4 2.9-2.1 4.6-1.7 2.7.7 4.1 3.5 3.3 6.1C19.5 16.4 12 21 12 21z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+function CartIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      {...props}
+    >
+      <path
+        fill="currentColor"
+        d="M7 18a2 2 0 1 0 0 4a2 2 0 0 0 0-4m10 0a2 2 0 1 0 0 4a2 2 0 0 0 0-4M7.2 6l.6 3h10.9a1 1 0 0 1 1 .8l1 5a1 1 0 0 1-1 1.2H8a1 1 0 0 1-1-.8L5.1 4H3a1 1 0 1 1 0-2h3a1 1 0 0 1 1 .8L7.2 6Z"
+      />
+    </svg>
+  );
+}
 
+/* ===== Tipos ===== */
 type Role = "CLIENTE" | "ADMIN" | "EMPLEADO" | "PROVEEDOR" | undefined;
 
 export default function Header() {
-  const [open, setOpen] = useState(false); // menú móvil
-  const [menuOpen, setMenuOpen] = useState(false); // dropdown usuario (desktop)
+  // Para evitar hydration mismatch:
+  const [mounted, setMounted] = useState<boolean>(false);
+  useEffect(() => setMounted(true), []);
+
+  const [open, setOpen] = useState<boolean>(false); // menú móvil
+  const [menuOpen, setMenuOpen] = useState<boolean>(false); // dropdown usuario (desktop)
 
   const { data: session, status } = useSession();
-  const role = (session?.user as { role?: Role } | undefined)?.role;
-  const hasSession = status === "authenticated";
-  const isCliente = role === "CLIENTE";
+  const role: Role = (session?.user as { role?: Role } | undefined)?.role;
+  const hasSession: boolean = status === "authenticated";
+  const isCliente: boolean = role === "CLIENTE";
 
   // cerrar dropdown al click fuera
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -38,13 +72,25 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const firstName = (session?.user?.name ?? session?.user?.email ?? "Mi cuenta")
+  const firstName: string = (
+    session?.user?.name ??
+    session?.user?.email ??
+    "Mi cuenta"
+  )
     .toString()
     .split(" ")[0];
 
-  const handleLogout = async () => {
+  const handleLogout = async (): Promise<void> => {
     await signOut({ callbackUrl: "/" });
   };
+
+  // separador visual (•) entre links (siempre igual en SSR y CSR)
+  const Sep = () => (
+    <span className="sep" aria-hidden="true" style={{ opacity: 0.5 }}>
+      {" "}
+      •{" "}
+    </span>
+  );
 
   return (
     <header className="site-header">
@@ -57,6 +103,8 @@ export default function Header() {
             width={36}
             height={36}
             className="brand-logo"
+            // Evitar la advertencia de cambiar solo una dimensión:
+            style={{ width: "auto", height: "auto" }}
             priority
           />
           <span className="brand-name">BESO</span>
@@ -81,38 +129,64 @@ export default function Header() {
         {/* Acciones derechas */}
         <div
           className="right-actions"
-          style={{ display: "flex", alignItems: "center", gap: ".5rem" }}
+          style={{ display: "flex", alignItems: "center", gap: ".75rem" }}
+          // suprime warnings si el contenido cambia tras montado
+          suppressHydrationWarning
         >
           {/* Enlaces (desktop) */}
-          <nav className="nav-links hidden md:flex" aria-label="Principal">
+          <nav
+            className="nav-links hidden md:flex"
+            aria-label="Principal"
+            style={{ alignItems: "center" }}
+          >
             <Link href="/productos">Catálogo</Link>
+            <Sep />
             <Link href="/categorias">Categorías</Link>
+            <Sep />
             <Link href="/sobre-nosotros">Sobre nosotros</Link>
+            <Sep />
             <Link href="/contacto">Contáctanos</Link>
           </nav>
 
           {/* Tema */}
           <ThemeToggle />
 
+          {/* Wishlist (solo si está montado y el cliente está logueado) */}
+          {mounted && hasSession && isCliente && (
+            <Link
+              href="/wishlist"
+              className="icon-button"
+              aria-label="Lista de deseos"
+              title="Lista de deseos"
+            >
+              <HeartIcon />
+            </Link>
+          )}
+
           {/* Carrito */}
           <Link
             href="/carrito"
             className="icon-button cart-button"
             aria-label="Carrito"
+            title="Carrito"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M7 18a2 2 0 1 0 0 4a2 2 0 0 0 0-4m10 0a2 2 0 1 0 0 4a2 2 0 0 0 0-4M7.2 6l.6 3h10.9a1 1 0 0 1 1 .8l1 5a1 1 0 0 1-1 1.2H8a1 1 0 0 1-1-.8L5.1 4H3a1 1 0 1 1 0-2h3a1 1 0 0 1 1 .8L7.2 6Z"
-              />
-            </svg>
+            <CartIcon />
             <span className="cart-badge" aria-hidden="true">
               2
             </span>
           </Link>
 
           {/* Login / Menú usuario (desktop) */}
-          {!hasSession ? (
+          {!mounted ? (
+            // Mientras monta, evita ramificaciones distintas
+            <span
+              className="btn ghost"
+              aria-hidden="true"
+              style={{ visibility: "hidden" }}
+            >
+              …
+            </span>
+          ) : !hasSession ? (
             <Link
               href="/login"
               className="btn primary"
@@ -151,6 +225,8 @@ export default function Header() {
                     border: "1px solid var(--stroke)",
                     boxShadow: "0 10px 30px rgba(0,0,0,.15)",
                     zIndex: 20,
+                    background: "var(--panel)",
+                    color: "var(--ink)",
                   }}
                 >
                   <div className="muted" style={{ fontSize: ".8rem" }}>
@@ -164,7 +240,6 @@ export default function Header() {
                     }}
                   />
 
-                  {/* Opciones para cliente */}
                   {isCliente ? (
                     <>
                       <Link className="btn ghost" href="/cuenta">
@@ -173,9 +248,11 @@ export default function Header() {
                       <Link className="btn ghost" href="/cuenta/historial">
                         Historial de compras
                       </Link>
+                      <Link className="btn ghost" href="/wishlist">
+                        Mi lista de deseos
+                      </Link>
                     </>
                   ) : (
-                    // Para otros roles podrías llevarlos al admin
                     <Link className="btn ghost" href="/admin">
                       Ir a Admin
                     </Link>
@@ -242,6 +319,18 @@ export default function Header() {
             <Link href="/contacto" onClick={() => setOpen(false)}>
               Contáctanos
             </Link>
+
+            {/* Wishlist en móvil solo logueado */}
+            {mounted && hasSession && isCliente && (
+              <Link
+                href="/wishlist"
+                onClick={() => setOpen(false)}
+                className="btn ghost"
+              >
+                Wishlist
+              </Link>
+            )}
+
             <Link
               href="/carrito"
               onClick={() => setOpen(false)}
@@ -251,7 +340,7 @@ export default function Header() {
             </Link>
 
             {/* Bloque de sesión en móvil */}
-            {!hasSession ? (
+            {!mounted ? null : !hasSession ? (
               <Link
                 href="/login"
                 onClick={() => setOpen(false)}
@@ -271,6 +360,9 @@ export default function Header() {
                       onClick={() => setOpen(false)}
                     >
                       Historial de compras
+                    </Link>
+                    <Link href="/wishlist" onClick={() => setOpen(false)}>
+                      Mi lista de deseos
                     </Link>
                   </>
                 ) : (

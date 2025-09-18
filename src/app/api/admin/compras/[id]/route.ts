@@ -1,13 +1,11 @@
-// src/app/api/admin/compras/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/admin/compras/[id]
 export async function GET(
   _req: Request,
-  ctx: { params: Promise<{ id: string }> } // 👈 params es Promise
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  // 👇 hay que await a params antes de usarlo
   const { id } = await ctx.params;
   const compraId = Number(id);
 
@@ -15,13 +13,20 @@ export async function GET(
     return NextResponse.json({ error: "id inválido" }, { status: 400 });
   }
 
-  // Traemos compra + proveedor + detalle (con nombre de producto)
   const compra = await prisma.compra.findUnique({
     where: { id: compraId },
     include: {
       proveedor: { select: { nombre: true } },
       detalleCompras: {
-        include: { producto: { select: { nombre: true } } },
+        include: {
+          producto: { select: { nombre: true } },
+          variante: {
+            include: {
+              color: { select: { nombre: true } },
+              talla: { select: { codigo: true } },
+            },
+          },
+        },
       },
     },
   });
@@ -33,18 +38,24 @@ export async function GET(
     );
   }
 
-  // Traemos pagos por relación separada (evitamos depender del nombre del campo relacional)
   const pagos = await prisma.pagoProveedor.findMany({
     where: { idCompra: compraId },
     orderBy: { fecha: "asc" },
   });
 
-  // Normalizamos decimales a number
   const detalle = compra.detalleCompras.map((d) => ({
     idProducto: d.idProducto,
+    idVariante: d.idVariante ?? null,
     cantidad: d.cantidad,
     precioUnitario: Number(d.precioUnitario),
     producto: d.producto ? { nombre: d.producto.nombre } : null,
+    variante: d.variante
+      ? {
+          sku: d.variante.sku,
+          color: d.variante.color ? { nombre: d.variante.color.nombre } : null,
+          talla: d.variante.talla ? { codigo: d.variante.talla.codigo } : null,
+        }
+      : null,
   }));
 
   const pagosNorm = pagos.map((p) => ({
@@ -62,7 +73,6 @@ export async function GET(
     idProveedor: compra.idProveedor,
     fecha: compra.fecha.toISOString(),
     total: compra.total ? Number(compra.total) : 0,
-    // tu schema actual no tiene "nota" en Compra; lo exponemos como null para no romper el front
     nota: null as string | null,
     proveedor: compra.proveedor ? { nombre: compra.proveedor.nombre } : null,
     detalleCompras: detalle,

@@ -1,4 +1,3 @@
-// src/app/admin/compras/page.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -32,9 +31,15 @@ type PagoProveedor = {
 type CompraFull = Compra & {
   detalleCompras: {
     idProducto: number;
+    idVariante: number | null;
     cantidad: number;
     precioUnitario: number;
     producto?: { nombre: string } | null;
+    variante?: {
+      sku: string | null;
+      color?: { nombre: string } | null;
+      talla?: { codigo: string } | null;
+    } | null;
   }[];
   pagosProveedor: PagoProveedor[];
 };
@@ -48,10 +53,20 @@ type Filtros = {
 };
 
 type ProveedorLite = { id: number; nombre: string };
-type ProductoLite = { id: number; nombre: string };
+
+/* === Variantes para selector === */
+type VarianteLite = {
+  id: number;
+  idProducto: number;
+  sku: string | null;
+  producto: { nombre: string } | null;
+  color?: { nombre: string } | null;
+  talla?: { codigo: string } | null;
+};
 
 type ItemForm = {
-  idProducto: string; // select
+  idVariante: string; // select (requerido)
+  idProducto: number | null; // derivado de la variante
   cantidad: string; // numeric text
   precioUnitario: string; // numeric text
 };
@@ -113,6 +128,24 @@ function PlusIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+function LinkCatalogIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" {...props} aria-hidden>
+      <path
+        d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 1 1-7-7l1-1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
 function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" {...props} aria-hidden>
@@ -155,7 +188,7 @@ export default function ComprasPage() {
   // Listas base
   const [rows, setRows] = useState<Compra[]>([]);
   const [proveedores, setProveedores] = useState<ProveedorLite[]>([]);
-  const [productos, setProductos] = useState<ProductoLite[]>([]);
+  const [variantes, setVariantes] = useState<VarianteLite[]>([]);
 
   // Filtros
   const [filters, setFilters] = useState<Filtros>({
@@ -180,7 +213,9 @@ export default function ComprasPage() {
     idProveedor: "",
     fecha: todayISO(),
     nota: "",
-    items: [{ idProducto: "", cantidad: "", precioUnitario: "" }],
+    items: [
+      { idVariante: "", idProducto: null, cantidad: "", precioUnitario: "" },
+    ],
   });
 
   // Form pago dentro del modal
@@ -204,7 +239,7 @@ export default function ComprasPage() {
   useEffect(() => {
     void load();
     void loadProveedores();
-    void loadProductos();
+    void loadVariantesLite();
   }, []);
 
   const load = async () => {
@@ -228,10 +263,85 @@ export default function ComprasPage() {
     setProveedores(data);
   };
 
-  const loadProductos = async () => {
-    const res = await fetch("/api/admin/productos?limit=1000&fields=id,nombre");
-    const data = (await res.json()) as ProductoLite[];
-    setProductos(data);
+  // Variantes (lite) para selector
+  // ===== Tipos estrictos para el selector de variantes =====
+  type VarianteLite = {
+    id: number;
+    idProducto: number;
+    sku: string | null;
+    producto: { nombre: string } | null;
+    color: { nombre: string } | null;
+    talla: { codigo: string } | null;
+  };
+
+  // ===== Guardas de tipo para objetos anidados =====
+  const isRecord = (v: unknown): v is Record<string, unknown> =>
+    typeof v === "object" && v !== null;
+
+  const num = (v: unknown): number | null => {
+    const n =
+      typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+    return Number.isFinite(n) ? n : null;
+  };
+
+  // ===== Variantes (Lite) para selector =====
+  const loadVariantesLite = async () => {
+    try {
+      const res = await fetch(
+        "/api/admin/variantes?limit=1000&with=producto,color,talla"
+      );
+      if (!res.ok) {
+        setVariantes([]);
+        return;
+      }
+
+      const raw: unknown = await res.json();
+
+      const list: VarianteLite[] = Array.isArray(raw)
+        ? raw
+            .map((r): VarianteLite | null => {
+              if (!isRecord(r)) return null;
+
+              const id = num(r.id);
+              const idProducto = num(r.idProducto);
+              const sku =
+                typeof r.sku === "string" && r.sku.trim() ? r.sku : null;
+
+              // producto
+              const productoObj =
+                "producto" in r && isRecord(r.producto) ? r.producto : null;
+              const producto =
+                productoObj && typeof productoObj.nombre === "string"
+                  ? { nombre: productoObj.nombre }
+                  : null;
+
+              // color
+              const colorObj =
+                "color" in r && isRecord(r.color) ? r.color : null;
+              const color =
+                colorObj && typeof colorObj.nombre === "string"
+                  ? { nombre: colorObj.nombre }
+                  : null;
+
+              // talla
+              const tallaObj =
+                "talla" in r && isRecord(r.talla) ? r.talla : null;
+              const talla =
+                tallaObj && typeof tallaObj.codigo === "string"
+                  ? { codigo: tallaObj.codigo }
+                  : null;
+
+              if (id == null || idProducto == null) return null;
+
+              return { id, idProducto, sku, producto, color, talla };
+            })
+            .filter((x): x is VarianteLite => x !== null)
+        : [];
+
+      setVariantes(list);
+    } catch {
+      setVariantes([]);
+    }
   };
 
   /* paginación */
@@ -286,14 +396,12 @@ export default function ComprasPage() {
     alert("PDF de lista generado.");
   };
 
-  /* Export detalle SIN any */
+  /* Export detalle */
   interface JsPDFWithAutoTable {
     lastAutoTable?: { finalY: number };
   }
   const exportOnePDF = (c: CompraFull) => {
     const doc = new jsPDF();
-
-    // Cabecera
     doc.text(`Compra #${c.id}`, 14, 14);
 
     const head: RowInput[] = [
@@ -302,7 +410,6 @@ export default function ComprasPage() {
       ["Total", `Q ${to2(c.total)}`],
       ["Nota", c.nota ?? "-"],
     ];
-
     autoTable(doc, {
       startY: 22,
       theme: "grid",
@@ -318,16 +425,24 @@ export default function ComprasPage() {
         ? (doc as unknown as JsPDFWithAutoTable).lastAutoTable!.finalY + 8
         : 32;
 
-    const items: RowInput[] = c.detalleCompras.map((d) => [
-      d.producto?.nombre ?? `#${d.idProducto}`,
-      d.cantidad,
-      Number(d.precioUnitario).toFixed(2),
-      (d.cantidad * Number(d.precioUnitario)).toFixed(2),
-    ]);
+    const items: RowInput[] = c.detalleCompras.map((d) => {
+      const varLabel = [
+        d.variante?.sku ?? "",
+        d.variante?.color?.nombre ? ` · ${d.variante?.color?.nombre}` : "",
+        d.variante?.talla?.codigo ? ` · ${d.variante?.talla?.codigo}` : "",
+      ].join("");
+      return [
+        (d.producto?.nombre ?? `#${d.idProducto}`) +
+          (varLabel ? ` (${varLabel})` : ""),
+        d.cantidad,
+        Number(d.precioUnitario).toFixed(2),
+        (d.cantidad * Number(d.precioUnitario)).toFixed(2),
+      ];
+    });
 
     autoTable(doc, {
       startY: y,
-      head: [["Producto", "Cant.", "P. Unit", "Subtotal"]],
+      head: [["Producto/Variante", "Cant.", "P. Unit", "Subtotal"]],
       body: items,
       styles: { fontSize: 9 },
       headStyles: { fillColor: [178, 76, 90] },
@@ -365,7 +480,9 @@ export default function ComprasPage() {
       idProveedor: "",
       fecha: todayISO(),
       nota: "",
-      items: [{ idProducto: "", cantidad: "", precioUnitario: "" }],
+      items: [
+        { idVariante: "", idProducto: null, cantidad: "", precioUnitario: "" },
+      ],
     });
     setOpenDrawer(true);
   };
@@ -373,7 +490,10 @@ export default function ComprasPage() {
   const addItem = () => {
     setForm((f) => ({
       ...f,
-      items: [...f.items, { idProducto: "", cantidad: "", precioUnitario: "" }],
+      items: [
+        ...f.items,
+        { idVariante: "", idProducto: null, cantidad: "", precioUnitario: "" },
+      ],
     }));
   };
 
@@ -400,25 +520,37 @@ export default function ComprasPage() {
       return acc + qty * pu;
     }, 0);
 
+  const variantLabel = (v: VarianteLite) => {
+    const base = v.producto?.nombre ?? `#${v.idProducto}`;
+    const parts: string[] = [];
+    if (v.color?.nombre) parts.push(v.color.nombre);
+    if (v.talla?.codigo) parts.push(v.talla.codigo);
+    if (v.sku) parts.push(v.sku);
+    return `${base} · ${parts.join(" · ")}`;
+  };
+
   const submitCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar
     const idProveedor = toInt(form.idProveedor);
     if (!Number.isFinite(idProveedor)) {
       alert("Selecciona un proveedor.");
       return;
     }
     if (!form.items.length) {
-      alert("Agrega al menos un producto.");
+      alert("Agrega al menos una variante.");
       return;
     }
+
+    // Normalizamos items -> todos requieren variante
+    const detalles = [];
     for (const [i, it] of form.items.entries()) {
-      const idProducto = toInt(it.idProducto);
+      const idVariante = toInt(it.idVariante);
       const cantidad = toNum(it.cantidad);
       const precio = toNum(it.precioUnitario);
-      if (!Number.isFinite(idProducto)) {
-        alert(`Selecciona producto en fila ${i + 1}.`);
+
+      if (!Number.isFinite(idVariante)) {
+        alert(`Selecciona variante en fila ${i + 1}.`);
         return;
       }
       if (!Number.isFinite(cantidad) || cantidad <= 0) {
@@ -429,17 +561,27 @@ export default function ComprasPage() {
         alert(`Precio unitario inválido en fila ${i + 1}.`);
         return;
       }
+
+      // Obtenemos idProducto de la variante seleccionada (lo traemos del listado cargado)
+      const v = variantes.find((x) => x.id === idVariante);
+      if (!v) {
+        alert(`Variante no encontrada en fila ${i + 1}.`);
+        return;
+      }
+
+      detalles.push({
+        idProducto: v.idProducto, // requerido por schema
+        idVariante: idVariante, // donde sumaremos stock
+        cantidad,
+        precioUnitario: precio,
+      });
     }
 
     const payload = {
       idProveedor,
-      fecha: form.fecha, // el API convierte a Date si viene string yyyy-mm-dd
+      fecha: form.fecha,
       nota: form.nota.trim() || null,
-      detalles: form.items.map((it) => ({
-        idProducto: toInt(it.idProducto),
-        cantidad: toNum(it.cantidad),
-        precioUnitario: toNum(it.precioUnitario),
-      })),
+      detalles,
     } as const;
 
     const res = await fetch("/api/admin/compras", {
@@ -456,7 +598,7 @@ export default function ComprasPage() {
 
     setOpenDrawer(false);
     await load();
-    alert("Compra registrada correctamente.");
+    alert("Compra registrada y stock actualizado.");
   };
 
   /* ====== Pagos: crear y eliminar ====== */
@@ -475,7 +617,7 @@ export default function ComprasPage() {
       monto,
       metodo: formPago.metodo.trim() || null,
       referencia: formPago.referencia.trim() || null,
-      fecha: formPago.fecha, // yyyy-mm-dd
+      fecha: formPago.fecha,
       nota: formPago.nota.trim() || null,
     } as const;
 
@@ -493,7 +635,7 @@ export default function ComprasPage() {
 
     resetFormPago();
     await refreshViewing();
-    await load(); // refresca lista para totales
+    await load();
     alert("Pago registrado.");
   };
 
@@ -524,7 +666,7 @@ export default function ComprasPage() {
     <>
       <h1 className="text-2xl font-bold mb-4">Compras</h1>
 
-      {/* Barra superior compacta + botón Mostrar filtros */}
+      {/* Barra superior */}
       <div className="panel p-4 mb-4">
         <div
           style={{
@@ -536,6 +678,16 @@ export default function ComprasPage() {
           }}
         >
           <div className="muted">Total: {count}</div>
+
+          {/* Acceso rápido a Catálogo (abre el formulario de alta) */}
+          <a
+            className="btn ghost"
+            href="/admin/catalogo?new=1"
+            title="Abrir Catálogo para crear producto/variante"
+          >
+            <LinkCatalogIcon style={{ marginRight: 6 }} />
+            Catálogo (nuevo)
+          </a>
 
           {/* Paginación compacta en cabecera */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -640,7 +792,6 @@ export default function ComprasPage() {
               <option value="desc">Desc</option>
               <option value="asc">Asc</option>
             </select>
-
             <button className="btn" onClick={load}>
               Filtrar
             </button>
@@ -733,7 +884,7 @@ export default function ComprasPage() {
         </div>
       </div>
 
-      {/* Modal detalle (compra + pagos) */}
+      {/* Modal detalle */}
       {viewing && (
         <div
           className="modal-root"
@@ -758,10 +909,8 @@ export default function ComprasPage() {
               overflow: "auto",
               display: "grid",
               gap: 14,
-              gridAutoRows: "min-content",
             }}
           >
-            {/* Header */}
             <div className="flex items-center justify-between">
               <h3 className="font-bold">Detalle de compra</h3>
               <div className="flex gap-2">
@@ -782,7 +931,6 @@ export default function ComprasPage() {
               </div>
             </div>
 
-            {/* Cabecera en grid */}
             <div
               className="panel p-3"
               style={{
@@ -809,34 +957,47 @@ export default function ComprasPage() {
               </div>
             </div>
 
-            {/* Items */}
             <div className="panel p-0">
               <div className="p-3 font-semibold">Items</div>
               <div style={{ maxHeight: 260, overflow: "auto" }}>
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Producto</th>
+                      <th>Producto / Variante</th>
                       <th style={{ width: 90 }}>Cant.</th>
                       <th style={{ width: 120 }}>P. Unit</th>
                       <th style={{ width: 120 }}>Subtotal</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {viewing.detalleCompras.map((d, i) => (
-                      <tr key={i}>
-                        <td>{d.producto?.nombre ?? `#${d.idProducto}`}</td>
-                        <td>{d.cantidad}</td>
-                        <td>{to2(Number(d.precioUnitario))}</td>
-                        <td>{to2(d.cantidad * Number(d.precioUnitario))}</td>
-                      </tr>
-                    ))}
+                    {viewing.detalleCompras.map((d, i) => {
+                      const varBits = [
+                        d.variante?.sku ?? "",
+                        d.variante?.color?.nombre
+                          ? ` · ${d.variante?.color?.nombre}`
+                          : "",
+                        d.variante?.talla?.codigo
+                          ? ` · ${d.variante?.talla?.codigo}`
+                          : "",
+                      ].join("");
+                      return (
+                        <tr key={i}>
+                          <td>
+                            {(d.producto?.nombre ?? `#${d.idProducto}`) +
+                              (varBits ? ` (${varBits})` : "")}
+                          </td>
+                          <td>{d.cantidad}</td>
+                          <td>{to2(Number(d.precioUnitario))}</td>
+                          <td>{to2(d.cantidad * Number(d.precioUnitario))}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* Resumen pagos */}
+            {/* Pagos */}
             <div
               className="panel p-3"
               style={{
@@ -852,7 +1013,6 @@ export default function ComprasPage() {
               </div>
             </div>
 
-            {/* Pagos al proveedor + Form (dos columnas balanceadas) */}
             <div
               style={{
                 display: "grid",
@@ -860,7 +1020,6 @@ export default function ComprasPage() {
                 gridTemplateColumns: "1fr 1fr",
               }}
             >
-              {/* Lista de pagos */}
               <div className="panel p-3" style={{ display: "grid", gap: 10 }}>
                 <div className="flex items-center justify-between">
                   <b>Pagos al proveedor</b>
@@ -907,7 +1066,6 @@ export default function ComprasPage() {
                 )}
               </div>
 
-              {/* Form registrar pago */}
               <div className="panel p-3" style={{ display: "grid", gap: 10 }}>
                 <b>Registrar pago</b>
                 <form onSubmit={submitPago} className="grid gap-3">
@@ -928,7 +1086,6 @@ export default function ComprasPage() {
                         required
                       />
                     </label>
-
                     <label className="grid gap-1">
                       <span>Fecha</span>
                       <input
@@ -1026,7 +1183,7 @@ export default function ComprasPage() {
               right: 0,
               top: 0,
               height: "100%",
-              width: "min(680px, 92vw)",
+              width: "min(720px, 92vw)",
               background: "var(--panel)",
               borderLeft: "1px solid var(--stroke)",
               padding: 16,
@@ -1069,7 +1226,6 @@ export default function ComprasPage() {
                     ))}
                   </select>
                 </label>
-
                 <label className="grid gap-1">
                   <span>Fecha</span>
                   <input
@@ -1096,14 +1252,24 @@ export default function ComprasPage() {
                 />
               </label>
 
-              {/* Detalle */}
+              {/* Detalle por VARIANTE */}
               <div className="panel p-3">
                 <div className="flex items-center justify-between mb-2">
                   <b>Detalle</b>
-                  <button type="button" className="btn" onClick={addItem}>
-                    <PlusIcon style={{ marginRight: 6 }} />
-                    Agregar ítem
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <a
+                      className="btn ghost"
+                      href="/admin/catalogo?new=1"
+                      title="Crear nueva variante (Catálogo)"
+                    >
+                      <LinkCatalogIcon style={{ marginRight: 6 }} />
+                      Crear variante
+                    </a>
+                    <button type="button" className="btn" onClick={addItem}>
+                      <PlusIcon style={{ marginRight: 6 }} />
+                      Agregar ítem
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid gap-2">
@@ -1113,6 +1279,21 @@ export default function ComprasPage() {
                       Number.isFinite(toNum(it.precioUnitario))
                         ? toNum(it.cantidad) * toNum(it.precioUnitario)
                         : 0;
+
+                    // versión de onChange que llena idProducto según la variante
+                    const onChangeVariante = (val: string) => {
+                      const idV = toInt(val);
+                      if (!Number.isFinite(idV)) {
+                        updateItem(idx, { idVariante: val, idProducto: null });
+                        return;
+                      }
+                      const v = variantes.find((x) => x.id === idV);
+                      updateItem(idx, {
+                        idVariante: val,
+                        idProducto: v ? v.idProducto : null,
+                      });
+                    };
+
                     return (
                       <div
                         key={idx}
@@ -1120,19 +1301,17 @@ export default function ComprasPage() {
                         style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr auto" }}
                       >
                         <label className="grid gap-1">
-                          <span>Producto</span>
+                          <span>Variante</span>
                           <select
                             className="input"
-                            value={it.idProducto}
-                            onChange={(e) =>
-                              updateItem(idx, { idProducto: e.target.value })
-                            }
+                            value={it.idVariante}
+                            onChange={(e) => onChangeVariante(e.target.value)}
                             required
                           >
                             <option value="">Seleccione…</option>
-                            {productos.map((p) => (
-                              <option key={p.id} value={String(p.id)}>
-                                {p.nombre}
+                            {variantes.map((v) => (
+                              <option key={v.id} value={String(v.id)}>
+                                {variantLabel(v)}
                               </option>
                             ))}
                           </select>

@@ -1,4 +1,3 @@
-// src/app/api/admin/compras/route.ts
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken, type JWT } from "next-auth/jwt";
@@ -13,9 +12,7 @@ const toInt = (v: string | null): number | null => {
 
 function tokenUserId(token: JWT | null): number | null {
   if (!token) return null;
-  // 1) Si el JWT trae `id` numérico
   if ("id" in token && typeof token.id === "number") return token.id;
-  // 2) Si solo trae `sub` string convertible a número
   if (typeof token.sub === "string") {
     const n = Number(token.sub);
     if (Number.isFinite(n)) return n;
@@ -27,9 +24,9 @@ function tokenUserId(token: JWT | null): number | null {
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
-  const proveedor = searchParams.get("proveedor"); // idProveedor (string)
-  const desde = searchParams.get("desde"); // yyyy-mm-dd
-  const hasta = searchParams.get("hasta"); // yyyy-mm-dd
+  const proveedor = searchParams.get("proveedor");
+  const desde = searchParams.get("desde");
+  const hasta = searchParams.get("hasta");
   const order = (
     (searchParams.get("order") ?? "fecha") === "id" ? "id" : "fecha"
   ) as "fecha" | "id";
@@ -37,7 +34,6 @@ export async function GET(req: Request) {
     (searchParams.get("dir") ?? "desc") === "asc" ? "asc" : "desc"
   ) as "asc" | "desc";
 
-  // ✅ Tipado exacto con Prisma
   const where: Prisma.CompraWhereInput = {};
 
   if (proveedor) {
@@ -66,13 +62,12 @@ export async function GET(req: Request) {
     },
   });
 
-  // Normalizamos algunos campos numéricos/decimales a number plano
   const normalized = data.map((c) => ({
     id: c.id,
     idProveedor: c.idProveedor,
     fecha: c.fecha.toISOString(),
     total: c.total ? Number(c.total) : 0,
-    nota: null as string | null, // en tu schema actual Compra no tiene "nota"
+    nota: null as string | null,
     proveedor: c.proveedor ? { nombre: c.proveedor.nombre } : null,
     _count: { detalleCompras: c._count.detalleCompras },
   }));
@@ -82,21 +77,21 @@ export async function GET(req: Request) {
 
 /* ============== CREAR (POST) ============== */
 type DetalleBody = {
-  idProducto: number;
+  idProducto: number; // requerido por schema
+  idVariante?: number | null; // si viene, sumamos stock en variante
   cantidad: number;
   precioUnitario: number;
 };
 type Body = {
   idProveedor: number;
-  fecha?: string; // yyyy-mm-dd opcional
-  nota?: string | null; // ignorado en schema actual, se permite en body sin usarlo
+  fecha?: string; // yyyy-mm-dd
+  nota?: string | null;
   detalles: DetalleBody[];
 };
 
 export async function POST(req: Request) {
   const body: Body = await req.json();
 
-  // Validaciones básicas
   if (!Number.isFinite(body.idProveedor) || body.idProveedor <= 0) {
     return NextResponse.json(
       { error: "idProveedor inválido" },
@@ -122,15 +117,23 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    if (
+      d.idVariante != null &&
+      (!Number.isFinite(d.idVariante) || (d.idVariante as number) <= 0)
+    ) {
+      return NextResponse.json(
+        { error: "idVariante inválido" },
+        { status: 400 }
+      );
+    }
   }
 
-  // Fecha (opcional)
   const fecha =
     typeof body.fecha === "string" && body.fecha.length >= 10
       ? new Date(`${body.fecha}T00:00:00`)
       : new Date();
 
-  // Usuario opcional desde token (✅ sin any)
+  // Usuario para auditoría/movimientos
   let idUsuario: number | null = null;
   try {
     const nextReq = new NextRequest(req.url, {
@@ -146,13 +149,12 @@ export async function POST(req: Request) {
     idUsuario = null;
   }
 
-  // total
   const total = body.detalles.reduce(
     (acc, d) => acc + d.cantidad * d.precioUnitario,
     0
   );
 
-  // Transacción: compra + detalles
+  // Transacción: compra + detalles + incrementos de stock + movimientos
   const created = await prisma.$transaction(async (tx) => {
     const compra = await tx.compra.create({
       data: {
@@ -163,14 +165,53 @@ export async function POST(req: Request) {
       },
     });
 
+    // Guardar detalles
     await tx.detalleCompra.createMany({
       data: body.detalles.map((d) => ({
         idCompra: compra.id,
         idProducto: d.idProducto,
+        idVariante: d.idVariante ?? null,
         cantidad: d.cantidad,
         precioUnitario: d.precioUnitario,
       })),
     });
+
+    // Sumar stock en VARIANTES y registrar movimiento
+    for (const d of body.detalles) {
+      if (d.idVariante) {
+        await tx.productoVariante.update({
+          where: { id: d.idVariante },
+          data: { stock: { increment: d.cantidad } },
+        });
+
+        await tx.inventarioMovimiento.create({
+          data: {
+            idProducto: d.idProducto,
+            idVariante: d.idVariante,
+            tipo: "ingreso",
+            cantidad: d.cantidad,
+            referencia: `Compra #${compra.id}`,
+            nota: body.nota ?? null,
+            idUsuario: idUsuario ?? undefined,
+            fecha: fecha,
+          },
+        });
+      } else {
+        // Si no viene variante, opcionalmente dejamos rastro en inventario por el producto (legacy)
+        await tx.inventarioMovimiento.create({
+          data: {
+            idProducto: d.idProducto,
+            idVariante: null,
+            tipo: "ingreso",
+            cantidad: d.cantidad,
+            referencia: `Compra #${compra.id}`,
+            nota: body.nota ?? null,
+            idUsuario: idUsuario ?? undefined,
+            fecha: fecha,
+          },
+        });
+      }
+    }
 
     return compra;
   });

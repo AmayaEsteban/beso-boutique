@@ -17,6 +17,10 @@ function formatSizes(sizes: string[]): string {
   return sizes.join(",");
 }
 
+type OrderField = "id" | "precio" | "nombre" | "creado" | "actualizado";
+type Dir = "asc" | "desc";
+type Status = "activos" | "inactivos" | "todos";
+
 /* ======================= GET (listado) ======================= */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -25,36 +29,42 @@ export async function GET(req: Request) {
   const catParam = searchParams.get("categoria");
   const idCategoria = catParam ? Number(catParam) : NaN;
 
-  const order = (searchParams.get("order") ?? "id") as
-    | "id"
-    | "precio"
-    | "nombre";
-  const dir = (searchParams.get("dir") ?? "desc") as "asc" | "desc";
+  const order = (searchParams.get("order") ?? "id") as OrderField;
+  const dir = (searchParams.get("dir") === "asc" ? "asc" : "desc") as Dir;
 
-  const where: Prisma.ProductoWhereInput = {};
-  if (q) {
-    where.OR = [
-      { nombre: { contains: q } },
-      { descripcion: { contains: q } },
-      { color: { contains: q } },
-    ];
-  }
-  if (!Number.isNaN(idCategoria)) {
-    // tu modelo usa 'categoriaId' como FK escalar
-    where.categoriaId = idCategoria;
-  }
+  // NUEVO: filtro por estado de publicación
+  const status = (searchParams.get("status") ?? "todos") as Status; // activos | inactivos | todos
+
+  const where: Prisma.ProductoWhereInput = {
+    ...(q
+      ? {
+          OR: [
+            { nombre: { contains: q } },
+            { descripcion: { contains: q } },
+            { color: { contains: q } },
+          ],
+        }
+      : {}),
+    ...(Number.isNaN(idCategoria) ? {} : { categoriaId: idCategoria }),
+    ...(status === "activos" ? { publicado: true } : {}),
+    ...(status === "inactivos" ? { publicado: false } : {}),
+  };
 
   const orderBy: Prisma.ProductoOrderByWithRelationInput =
     order === "precio"
       ? { precio: dir }
       : order === "nombre"
       ? { nombre: dir }
+      : order === "creado"
+      ? { creadoEn: dir }
+      : order === "actualizado"
+      ? { actualizadoEn: dir }
       : { id: dir };
 
   const productos = await prisma.producto.findMany({
     where,
     orderBy,
-    include: { categoria: true },
+    include: { categoria: true, imagenes: { orderBy: { orden: "asc" } } },
   });
 
   return NextResponse.json(productos);
@@ -72,6 +82,7 @@ export async function POST(req: Request) {
       color?: string | null;
       imagenUrl?: string | null;
       idCategoria?: number | null;
+      publicado?: boolean; // NUEVO
     };
 
     // nombre
@@ -116,17 +127,22 @@ export async function POST(req: Request) {
       tallaFormatted = formatSizes(sizes);
     }
 
-    // armamos el objeto tipado (sin any)
+    // NUEVO: publicación (por defecto false si no se envía)
+    const publicado =
+      typeof body.publicado === "boolean" ? body.publicado : false;
+    const publicadoEn = publicado ? new Date() : null;
+
+    // objeto tipado
     const data: Prisma.ProductoCreateInput = {
       nombre: body.nombre.trim(),
       descripcion: body.descripcion ?? null,
-      // Prisma Decimal admite number | string | Decimal => usamos number
       precio: precioNum ?? 0,
       stock: stockNum ?? 0,
       talla: tallaFormatted,
       color: body.color ?? null,
       imagenUrl: body.imagenUrl ?? null,
-      // relación opcional (solo conectamos si viene un número)
+      publicado,
+      publicadoEn,
       ...(typeof body.idCategoria === "number"
         ? { categoria: { connect: { id: body.idCategoria } } }
         : {}),
@@ -134,7 +150,7 @@ export async function POST(req: Request) {
 
     const created = await prisma.producto.create({
       data,
-      include: { categoria: true },
+      include: { categoria: true, imagenes: { orderBy: { orden: "asc" } } },
     });
 
     return NextResponse.json(created, { status: 201 });

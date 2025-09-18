@@ -63,9 +63,31 @@ model Rol {
   descripcion    String?   @db.VarChar(150)
   fecha_creacion DateTime  @default(now()) @db.Timestamp(0)
   usuarios       Usuario[]
+  permisos       RolPermiso[]
 
   @@map("roles")
 }
+
+/// =========================
+/// Seguridad: Permisos por rol
+/// =========================
+model RolPermiso {
+  idPermiso      Int     @id @default(autoincrement()) @map("id_permiso")
+  idRol          Int     @map("id_rol")
+  modulo         String  @db.VarChar(60)
+  puede_ver      Boolean @default(false)
+  puede_crear    Boolean @default(false)
+  puede_editar   Boolean @default(false)
+  puede_eliminar Boolean @default(false)
+
+  // relación
+  rol Rol @relation(fields: [idRol], references: [idRol], onDelete: Cascade, map: "fk_roles_permisos_rol")
+
+  @@unique([idRol, modulo], map: "uq_roles_permisos")
+  @@index([idRol], map: "idx_roles_permisos_rol")
+  @@map("roles_permisos")
+}
+
 
 model Usuario {
   id             Int             @id @default(autoincrement()) @map("id_usuario")
@@ -120,33 +142,44 @@ model Categoria {
 }
 
 model Producto {
-  id               Int                @id @default(autoincrement()) @map("id_producto")
-  nombre           String             @db.VarChar(100)
-  descripcion      String?            @db.Text
-  precio           Decimal            @db.Decimal(10, 2)
-  stock            Int                @default(0)                    // legacy
-  talla            String?            @db.VarChar(10)                // legacy
-  color            String?            @db.VarChar(30)                // legacy
-  imagenUrl        String?            @map("imagen_url") @db.VarChar(255)
-  categoriaId      Int?               @map("id_categoria")
+  id              Int                @id @default(autoincrement()) @map("id_producto")
+  nombre          String             @db.VarChar(100)
+  descripcion     String?            @db.Text
+  precio          Decimal            @db.Decimal(10, 2)
+  stock           Int                @default(0)                    // legacy
+  talla           String?            @db.VarChar(10)                // legacy
+  color           String?            @db.VarChar(30)                // legacy
+  imagenUrl       String?            @map("imagen_url") @db.VarChar(255)
+  categoriaId     Int?               @map("id_categoria")
+  creadoEn        DateTime           @default(now())                @map("creado_en")
+  actualizadoEn   DateTime           @updatedAt                     @map("actualizado_en")
+
+  // >>> NUEVO: control de publicación
+  publicado       Boolean            @default(true)                 @map("publicado")
+  publicadoEn     DateTime?                                           @map("publicado_en")
 
   // relaciones
-  clasificacionAbc ClasificacionAbc[]        // <— AQUÍ estaba el problema: el modelo existe y coincide el nombre
-  detalleCompras   DetalleCompra[]
-  detalleVentas    DetalleVenta[]            // ventas “legacy” por producto
-  categoria        Categoria?         @relation(fields: [categoriaId], references: [id], map: "fk_productos_categorias")
+  clasificacionAbc  ClasificacionAbc[]
+  detalleCompras    DetalleCompra[]
+  detalleVentas     DetalleVenta[]
+  categoria         Categoria?         @relation(fields: [categoriaId], references: [id], map: "fk_productos_categorias")
 
   // normalización
-  variantes        ProductoVariante[]
-  imagenes         ProductoImagen[]
+  variantes         ProductoVariante[]
+  imagenes          ProductoImagen[]
 
   @@index([categoriaId], map: "fk_productos_categorias")
+
+  // >>> NUEVO: índice para listados por publicación + recientes
+  @@index([publicado, creadoEn], map: "idx_prod_publicado_creado")
+
   @@map("productos")
-  InventarioMovimiento InventarioMovimiento[] @relation(map: "fk_mov_producto")
-  DevolucionProveedorItem DevolucionProveedorItem[] @relation(map: "fk_itemdev_producto")
-  ResenaProducto ResenaProducto[] @relation(map: "fk_resena_producto")
-  ListaDeseos ListaDeseos[] @relation(map: "fk_wish_producto")
+  InventarioMovimiento         InventarioMovimiento[]       @relation(map: "fk_mov_producto")
+  DevolucionProveedorItem      DevolucionProveedorItem[]    @relation(map: "fk_itemdev_producto")
+  ResenaProducto               ResenaProducto[]             @relation(map: "fk_resena_producto")
+  ListaDeseos                  ListaDeseos[]                @relation(map: "fk_wish_producto")
 }
+
 
 /* =========================
    CLASIFICACIÓN ABC
@@ -169,6 +202,8 @@ model Color {
   id     Int     @id @default(autoincrement()) @map("id_color")
   nombre String  @unique @db.VarChar(50)
   hex    String? @db.Char(7)
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt      @map("actualizado_en")
   variantes ProductoVariante[]
 
   @@map("colores")
@@ -178,6 +213,8 @@ model Talla {
   id     Int    @id @default(autoincrement()) @map("id_talla")
   codigo String @unique @db.VarChar(10)
   orden  Int    @default(0)
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt      @map("actualizado_en")
   variantes ProductoVariante[]
 
   @@map("tallas")
@@ -196,6 +233,8 @@ model ProductoVariante {
   producto     Producto @relation(fields: [idProducto], references: [id], onDelete: Cascade, map: "fk_variante_producto")
   color        Color?   @relation(fields: [idColor], references: [id], map: "fk_variante_color")
   talla        Talla?   @relation(fields: [idTalla], references: [id], map: "fk_variante_talla")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt      @map("actualizado_en")
 
   detalleVentas DetalleVenta[]
 
@@ -207,6 +246,7 @@ model ProductoVariante {
   InventarioMovimiento InventarioMovimiento[] @relation(map: "fk_mov_variante")
   DevolucionProveedorItem DevolucionProveedorItem[] @relation(map: "fk_itemdev_variante")
   ListaDeseos ListaDeseos[] @relation(map: "fk_wish_variante")
+  DetalleCompra DetalleCompra[] @relation(map: "fk_detcompra_variante")
 }
 
 model ProductoImagen {
@@ -215,6 +255,8 @@ model ProductoImagen {
   url        String   @db.VarChar(255)
   alt        String?  @db.VarChar(150)
   orden      Int      @default(0)
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt      @map("actualizado_en")
 
   producto   Producto @relation(fields: [idProducto], references: [id], onDelete: Cascade, map: "fk_img_producto")
 
@@ -247,6 +289,8 @@ model Compra {
 
   proveedor      Proveedor       @relation(fields: [idProveedor], references: [id], map: "fk_compras_proveedores")
   usuario        Usuario?        @relation(fields: [idUsuario], references: [id], map: "fk_compras_usuarios")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt      @map("actualizado_en")
   detalleCompras DetalleCompra[]
 
   @@index([idProveedor], map: "fk_compras_proveedores")
@@ -259,16 +303,20 @@ model DetalleCompra {
   id             Int      @id @default(autoincrement()) @map("id_detalle_compra")
   idCompra       Int      @map("id_compra")
   idProducto     Int      @map("id_producto")
+  idVariante     Int?     @map("id_variante")            // <— NUEVO
   cantidad       Int
   precioUnitario Decimal  @map("precio_unitario") @db.Decimal(10, 2)
 
   compra         Compra   @relation(fields: [idCompra], references: [id], onDelete: Cascade, map: "fk_detcompra_compras")
   producto       Producto @relation(fields: [idProducto], references: [id], map: "fk_detcompra_productos")
+  variante       ProductoVariante? @relation(fields: [idVariante], references: [id], map: "fk_detcompra_variante") // <— NUEVO
 
   @@index([idCompra], map: "fk_detcompra_compras")
   @@index([idProducto], map: "fk_detcompra_productos")
+  @@index([idVariante], map: "idx_detcompra_variante") // <— NUEVO
   @@map("detalle_compra")
 }
+
 
 /* =========================
    VENTAS / PAGOS
@@ -497,6 +545,8 @@ model PagoProveedor {
   nota        String?   @db.VarChar(255)
 
   compra      Compra    @relation(fields: [idCompra], references: [id], onDelete: Cascade, map: "fk_pagop_compra")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt      @map("actualizado_en")
 
   @@index([idCompra], map: "idx_pp_compra")
   @@map("pagos_proveedor")

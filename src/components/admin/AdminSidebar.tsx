@@ -121,7 +121,7 @@ export default function AdminSidebar({ onNavigate }: Props) {
 
           {/* Catálogo */}
           <Group id="catalogo" title="Catálogo" defaultOpen>
-            <NavItem href="/admin/productos" onNavigate={onNavigate}>
+            <NavItem href="/admin/catalogo" onNavigate={onNavigate}>
               Productos
             </NavItem>
             <NavItem href="/admin/categorias" onNavigate={onNavigate}>
@@ -133,8 +133,8 @@ export default function AdminSidebar({ onNavigate }: Props) {
             <NavItem href="/admin/tallas" onNavigate={onNavigate}>
               Tallas
             </NavItem>
-            <NavItem href="/admin/variantes" onNavigate={onNavigate}>
-              Variantes
+            <NavItem href="/admin/productos" onNavigate={onNavigate}>
+              Publicación
             </NavItem>
             <NavItem href="/admin/imagenes-productos" onNavigate={onNavigate}>
               Imágenes de Productos
@@ -199,7 +199,7 @@ export default function AdminSidebar({ onNavigate }: Props) {
             <NavItem href="/admin/faqs" onNavigate={onNavigate}>
               FAQs
             </NavItem>
-            <NavItem href="/admin/sobre-nosotros" onNavigate={onNavigate}>
+            <NavItem href="/admin/sobre" onNavigate={onNavigate}>
               Sobre Nosotros
             </NavItem>
             <NavItem href="/admin/contacto" onNavigate={onNavigate}>
@@ -227,7 +227,10 @@ export default function AdminSidebar({ onNavigate }: Props) {
             <NavItem href="/admin/configuracion" onNavigate={onNavigate}>
               Configuración
             </NavItem>
-            <NavItem href="/admin/seguridad" onNavigate={onNavigate}>
+            <NavItem
+              href="/admin/operacion/seguridad/roles"
+              onNavigate={onNavigate}
+            >
               Seguridad (Roles)
             </NavItem>
             <NavItem href="/admin/auditoria" onNavigate={onNavigate}>

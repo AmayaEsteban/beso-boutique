@@ -1,3 +1,4 @@
+// src/app/api/admin/productos/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -5,7 +6,30 @@ import { parseSizes, formatSizes, validateSizes } from "@/lib/sizes";
 
 type Params = { params: { id: string } };
 
-// PUT /api/admin/productos/[id]
+// ======================= GET (one) =======================
+export async function GET(_req: Request, { params }: Params) {
+  const id = Number(params.id);
+  if (!Number.isFinite(id)) {
+    return NextResponse.json({ error: "ID inválido" }, { status: 400 });
+  }
+
+  const p = await prisma.producto.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      nombre: true,
+      precio: true,
+      imagenUrl: true,
+      publicado: true, // NUEVO
+      publicadoEn: true, // NUEVO
+    },
+  });
+
+  if (!p) return NextResponse.json({ error: "No existe" }, { status: 404 });
+  return NextResponse.json(p);
+}
+
+// ======================= PUT (update campos generales) =======================
 export async function PUT(req: Request, { params }: Params) {
   try {
     const id = Number(params.id);
@@ -18,6 +42,7 @@ export async function PUT(req: Request, { params }: Params) {
       color?: string | null;
       imagenUrl?: string | null;
       idCategoria?: number | null;
+      publicado?: boolean; // NUEVO: opcional aquí también
     };
 
     const data: Prisma.ProductoUpdateInput = {};
@@ -39,7 +64,7 @@ export async function PUT(req: Request, { params }: Params) {
       if (Number.isNaN(precioNum) || precioNum < 0) {
         return NextResponse.json({ error: "Precio inválido" }, { status: 400 });
       }
-      data.precio = new Prisma.Decimal(precioNum); // ✅ sin any
+      data.precio = new Prisma.Decimal(precioNum);
     }
 
     if (typeof body.stock !== "undefined") {
@@ -72,7 +97,6 @@ export async function PUT(req: Request, { params }: Params) {
       data.imagenUrl = body.imagenUrl ?? null;
     }
 
-    // Manejo de categoría por relación (evita tocar FK directa)
     if (typeof body.idCategoria !== "undefined") {
       data.categoria =
         body.idCategoria === null
@@ -82,10 +106,16 @@ export async function PUT(req: Request, { params }: Params) {
           : undefined;
     }
 
+    // NUEVO: si viene 'publicado' en PUT también lo aplicamos
+    if (typeof body.publicado === "boolean") {
+      data.publicado = body.publicado;
+      data.publicadoEn = body.publicado ? new Date() : null;
+    }
+
     const updated = await prisma.producto.update({
       where: { id },
       data,
-      include: { categoria: true },
+      include: { categoria: true, imagenes: { orderBy: { orden: "asc" } } },
     });
 
     return NextResponse.json(updated);
@@ -97,7 +127,41 @@ export async function PUT(req: Request, { params }: Params) {
   }
 }
 
-// DELETE /api/admin/productos/[id]
+// ======================= PATCH (toggle publicado) =======================
+// body: { publicado: boolean }
+export async function PATCH(req: Request, { params }: Params) {
+  try {
+    const id = Number(params.id);
+    if (!Number.isFinite(id)) {
+      return NextResponse.json({ error: "ID inválido" }, { status: 400 });
+    }
+    const body = (await req.json()) as { publicado?: unknown };
+    if (typeof body.publicado !== "boolean") {
+      return NextResponse.json(
+        { error: "Campo 'publicado' requerido (boolean)" },
+        { status: 400 }
+      );
+    }
+
+    const updated = await prisma.producto.update({
+      where: { id },
+      data: {
+        publicado: body.publicado,
+        publicadoEn: body.publicado ? new Date() : null,
+      },
+      select: { id: true, publicado: true, publicadoEn: true },
+    });
+
+    return NextResponse.json(updated);
+  } catch (e) {
+    return NextResponse.json(
+      { error: (e as Error).message || "Error al actualizar estado" },
+      { status: 400 }
+    );
+  }
+}
+
+// ======================= DELETE =======================
 export async function DELETE(_req: Request, { params }: Params) {
   try {
     const id = Number(params.id);

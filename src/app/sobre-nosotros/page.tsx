@@ -1,10 +1,93 @@
-export const metadata = {
-  title: "Sobre nosotros | BESO Boutique",
-  description:
-    "Conoce la historia, misión, visión y valores de BESO Boutique. Moda con calidad, atención cercana y envíos a todo el país.",
-};
+// src/app/sobre-nosotros/page.tsx
+import { prisma } from "@/lib/prisma";
+import type { Metadata } from "next";
 
-export default function SobreNosotrosPage() {
+/* ===== Icons (heredan currentColor) ===== */
+function InfoIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden {...props}>
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        fill="none"
+      />
+      <path
+        d="M12 11v6M12 8h.01"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+function TargetIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden {...props}>
+      <circle
+        cx="12"
+        cy="12"
+        r="8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle cx="12" cy="12" r="3" fill="currentColor" />
+      <path
+        d="M12 2v3M22 12h-3M12 22v-3M2 12h3"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+function EyeIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden {...props}>
+      <path
+        d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle cx="12" cy="12" r="3" fill="currentColor" />
+    </svg>
+  );
+}
+function StarIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden {...props}>
+      <path
+        d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.9 6.4 20.2l1.1-6.2L3 9.6l6.2-.9L12 3z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const s = await prisma.sobreNosotros.findUnique({ where: { id: 1 } });
+  const title = s?.titulo?.trim() || "Sobre nosotros | BESO Boutique";
+  const description =
+    (s?.contenido && s.contenido.replace(/<[^>]+>/g, "").slice(0, 140)) ||
+    "Conoce la historia, misión, visión y valores de BESO Boutique.";
+  return { title, description };
+}
+
+export default async function SobreNosotrosPage() {
+  const s = await prisma.sobreNosotros.findUnique({ where: { id: 1 } });
+
+  const valoresList =
+    s?.valores
+      ?.split(/\r?\n|,|·|•/g)
+      .map((v) => v.trim())
+      .filter(Boolean) || [];
+
   return (
     <section
       className="container"
@@ -12,77 +95,71 @@ export default function SobreNosotrosPage() {
     >
       {/* Hero */}
       <header className="panel p-6 mb-6" style={{ textAlign: "center" }}>
-        <h1 className="text-3xl font-bold">Sobre BESO Boutique</h1>
-        <p className="muted mt-2">
-          Moda que se siente bien: calidad, estilo y un servicio que te
-          acompaña.
-        </p>
+        <div className="flex items-center gap-2 justify-center">
+          <InfoIcon />
+          <h1 className="text-3xl font-bold">
+            {s?.titulo || "Sobre BESO Boutique"}
+          </h1>
+        </div>
+        {s?.contenido ? (
+          <p
+            className="muted mt-2"
+            dangerouslySetInnerHTML={{ __html: s.contenido }}
+          />
+        ) : (
+          <p className="muted mt-2">
+            Moda que se siente bien: calidad, estilo y un servicio que te
+            acompaña.
+          </p>
+        )}
       </header>
 
-      {/* Misión y visión */}
-      <div
-        className="grid gap-6 mb-6"
-        style={{ gridTemplateColumns: "1fr 1fr" }}
-      >
-        <article className="panel p-5">
-          <h3 className="font-bold mb-2">Nuestra misión</h3>
-          <p>
-            Ofrecer prendas actuales con excelente relación calidad–precio y una
-            experiencia de compra sencilla, humana y confiable.
-          </p>
-        </article>
-        <article className="panel p-5">
-          <h3 className="font-bold mb-2">Nuestra visión</h3>
-          <p>
-            Ser la boutique online referente de la región por innovación,
-            cercanía y consistencia en cada entrega.
-          </p>
-        </article>
-      </div>
+      {/* Misión y Visión */}
+      {(s?.mision || s?.vision) && (
+        <div
+          className="grid gap-6 mb-6"
+          style={{ gridTemplateColumns: "1fr 1fr" }}
+        >
+          {s?.mision && (
+            <article className="panel p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <TargetIcon />
+                <h3 className="font-bold">Nuestra misión</h3>
+              </div>
+              <div dangerouslySetInnerHTML={{ __html: s.mision }} />
+            </article>
+          )}
+          {s?.vision && (
+            <article className="panel p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <EyeIcon />
+                <h3 className="font-bold">Nuestra visión</h3>
+              </div>
+              <div dangerouslySetInnerHTML={{ __html: s.vision }} />
+            </article>
+          )}
+        </div>
+      )}
 
       {/* Valores */}
-      <section className="panel p-5 mb-6">
-        <h3 className="font-bold mb-3">Nuestros valores</h3>
-        <ul
-          className="grid gap-4"
-          style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
-        >
-          <li>
-            <b>Cercanía</b>
-            <br />
-            Escuchamos, orientamos y resolvemos.
-          </li>
-          <li>
-            <b>Calidad</b>
-            <br />
-            Prendas y acabados que te acompañan más tiempo.
-          </li>
-          <li>
-            <b>Confianza</b>
-            <br />
-            Pagos seguros y políticas claras.
-          </li>
-        </ul>
-      </section>
-
-      {/* Historia (línea de tiempo) */}
-      <section className="panel p-5 mb-6">
-        <h3 className="font-bold mb-3">Nuestra historia</h3>
-        <ol className="grid gap-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
-          <li>
-            <b>2023</b> — Nace la idea de BESO como proyecto familiar.
-          </li>
-          <li>
-            <b>2024</b> — Lanzamos catálogo online y primeros envíos nacionales.
-          </li>
-          <li>
-            <b>2025</b> — Ampliamos categorías y optimizamos logística.
-          </li>
-          <li>
-            <b>Hoy</b> — Crecemos contigo, mejorando colección a colección.
-          </li>
-        </ol>
-      </section>
+      {valoresList.length > 0 && (
+        <section className="panel p-5 mb-6">
+          <h3 className="font-bold mb-3">Nuestros valores</h3>
+          <ul
+            className="grid gap-3"
+            style={{
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            }}
+          >
+            {valoresList.map((v, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <StarIcon />
+                <span>{v}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* CTA */}
       <div className="panel p-5" style={{ textAlign: "center" }}>

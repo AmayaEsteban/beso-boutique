@@ -1,28 +1,31 @@
-// src/app/admin/productos/page.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable, { RowInput } from "jspdf-autotable";
-import type { Prisma, Categoria as CategoriaModel } from "@prisma/client";
 
-/* ==== Tipos ==== */
-type Producto = Prisma.ProductoGetPayload<{ include: { categoria: true } }>;
-type Categoria = CategoriaModel;
+/* ===== Tipos ===== */
+type Categoria = { id: number; nombre: string };
+type Imagen = { url: string; orden: number };
 
-type OrderField = "id" | "nombre" | "precio";
-type Dir = "asc" | "desc";
-
-/** Formulario SOLO con campos editables del producto (no stock/talla/color). */
-type FormState = {
+type Producto = {
+  id: number;
   nombre: string;
-  descripcion: string;
-  precio: string; // se parsea a number al enviar
-  imagenUrl: string;
-  idCategoria: string; // select -> se convierte a number | undefined
+  descripcion: string | null;
+  imagenUrl: string | null;
+  publicado: boolean;
+  publicadoEn: string | null;
+  creadoEn: string;
+  actualizadoEn: string;
+  categoria?: Categoria | null;
+  imagenes?: Imagen[];
 };
 
-/* ==== Iconos ligeros (inline) ==== */
+type OrderField = "nombre" | "actualizado" | "creado";
+type Dir = "asc" | "desc";
+type Status = "activos" | "inactivos" | "todos";
+
+/* ===== Iconos ===== */
 function PdfIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" {...props} aria-hidden>
@@ -39,11 +42,11 @@ function PdfIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-function ViewIcon(props: React.SVGProps<SVGSVGElement>) {
+function EyeIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" {...props} aria-hidden>
       <path
-        d="M12 5c-7.633 0-11 7-11 7s3.367 7 11 7 11-7 11-7-3.367-7-11-7z"
+        d="M12 5C4.367 5 1 12 1 12s3.367 7 11 7 11-7 11-7-3.367-7-11-7z"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
@@ -77,6 +80,38 @@ function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+function ToggleOn(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 48 24" width="34" height="18" {...props} aria-hidden>
+      <rect
+        x="1"
+        y="1"
+        width="46"
+        height="22"
+        rx="11"
+        stroke="currentColor"
+        fill="currentColor"
+      />
+      <circle cx="35" cy="12" r="8" fill="white" />
+    </svg>
+  );
+}
+function ToggleOff(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 48 24" width="34" height="18" {...props} aria-hidden>
+      <rect
+        x="1"
+        y="1"
+        width="46"
+        height="22"
+        rx="11"
+        stroke="currentColor"
+        fill="none"
+      />
+      <circle cx="13" cy="12" r="8" fill="currentColor" />
+    </svg>
+  );
+}
 function CloseIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" {...props} aria-hidden>
@@ -90,253 +125,244 @@ function CloseIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-/* ==== Utils ==== */
-const toNumber = (v: unknown): number => {
-  if (typeof v === "number") return v;
-  if (typeof v === "string") return parseFloat(v);
-  try {
-    return parseFloat(String(v));
-  } catch {
-    return NaN;
-  }
-};
+/* ===== Helpers ===== */
+const firstImage = (p: Producto) =>
+  p.imagenes?.[0]?.url ?? p.imagenUrl ?? "/placeholder-product.png";
 
-export default function ProductosPage() {
-  /* ===== Estado ===== */
-  const [items, setItems] = useState<Producto[]>([]);
+const fmtDate = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleString() : "-";
+
+const StatusDot: React.FC<{ active: boolean; title?: string }> = ({
+  active,
+  title,
+}) => (
+  <span
+    title={title}
+    aria-hidden
+    style={{
+      display: "inline-block",
+      width: 10,
+      height: 10,
+      borderRadius: "999px",
+      marginRight: 8,
+      background: active ? "#16a34a" : "#dc2626", // verde / rojo
+      boxShadow: "0 0 0 2px rgba(0,0,0,.06) inset",
+      verticalAlign: "middle",
+    }}
+  />
+);
+
+/* ===== Página ===== */
+export default function ProductosAdminPage() {
+  const [rows, setRows] = useState<Producto[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // filtros
+  // filtros / ui
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [categoria, setCategoria] = useState<string>("");
-  const [order, setOrder] = useState<OrderField>("id");
+  const [status, setStatus] = useState<Status>("todos");
+  const [order, setOrder] = useState<OrderField>("creado");
   const [dir, setDir] = useState<Dir>("desc");
-  const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
 
   // paginación
-  const [pageSize, setPageSize] = useState<number>(10);
-  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
 
-  // categorías para el select
-  const [cats, setCats] = useState<Categoria[]>([]);
-
-  // modal ver detalle
+  // detalle
   const [viewing, setViewing] = useState<Producto | null>(null);
 
-  // drawer crear/editar
-  const [openModal, setOpenModal] = useState(false);
-  const [editing, setEditing] = useState<Producto | null>(null);
-  const [form, setForm] = useState<FormState>({
+  // editar
+  type EditForm = {
+    id: number | null;
+    nombre: string;
+    descripcion: string;
+    idCategoria: string;
+    imagenUrl: string;
+    publicado: boolean;
+  };
+  const [editOpen, setEditOpen] = useState(false);
+  const [form, setForm] = useState<EditForm>({
+    id: null,
     nombre: "",
     descripcion: "",
-    precio: "",
-    imagenUrl: "",
     idCategoria: "",
+    imagenUrl: "",
+    publicado: false,
   });
 
-  /* ===== Cargar categorías ===== */
-  const fetchCategorias = async () => {
+  const loadCategorias = async () => {
     try {
       const res = await fetch("/api/admin/categorias");
       if (!res.ok) return;
-      const data = (await res.json()) as Categoria[];
-      setCats(data);
+      const raw: unknown = await res.json();
+      const list: Categoria[] = Array.isArray(raw)
+        ? raw
+            .map((r) => {
+              if (!r || typeof r !== "object") return null;
+              const o = r as Record<string, unknown>;
+              const id = typeof o.id === "number" ? o.id : Number(o.id);
+              const nombre = typeof o.nombre === "string" ? o.nombre : null;
+              return Number.isFinite(id) && nombre ? { id, nombre } : null;
+            })
+            .filter((x): x is Categoria => x !== null)
+        : [];
+      setCategorias(list);
     } catch {
-      // silencioso
+      setCategorias([]);
     }
   };
 
-  /* ===== Cargar productos ===== */
-  const fetchProductos = async () => {
+  const load = async () => {
     setLoading(true);
-    const sp = new URLSearchParams();
-    if (q) sp.set("q", q);
-    if (categoria) sp.set("categoria", categoria);
-    sp.set("order", order);
-    sp.set("dir", dir);
+    try {
+      const sp = new URLSearchParams();
+      if (q.trim()) sp.set("q", q.trim());
+      sp.set("status", status);
+      sp.set("order", order);
+      sp.set("dir", dir);
 
-    const res = await fetch(`/api/admin/productos?${sp.toString()}`);
-    const data = (await res.json()) as Producto[];
-    setItems(data);
-    setLoading(false);
-    setPage(1); // reset paginación al filtrar
+      const res = await fetch(`/api/admin/productos?${sp.toString()}`);
+      const raw: unknown = await res.json();
+      setRows(Array.isArray(raw) ? (raw as Producto[]) : []);
+      setPage(1);
+    } catch {
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    void fetchCategorias();
-  }, []);
-  useEffect(() => {
-    void fetchProductos();
+    void loadCategorias();
+    void load();
   }, []);
 
-  /* ===== Crear / Editar producto ===== */
-  const openCreate = () => {
-    setEditing(null);
-    setForm({
-      nombre: "",
-      descripcion: "",
-      precio: "",
-      imagenUrl: "",
-      idCategoria: "",
+  // paginado
+  const count = rows.length;
+  const totalPages = Math.max(1, Math.ceil(count / pageSize));
+  const pageSafe = Math.min(page, totalPages);
+  const start = (pageSafe - 1) * pageSize;
+  const end = Math.min(start + pageSize, count);
+  const pageRows = useMemo(() => rows.slice(start, end), [rows, start, end]);
+
+  const togglePublicado = async (p: Producto) => {
+    const res = await fetch(`/api/admin/productos/${p.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ publicado: !p.publicado }),
     });
-    setOpenModal(true);
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      alert(e?.error ?? "No se pudo actualizar el estado.");
+      return;
+    }
+    await load();
+  };
+
+  const onDelete = async (p: Producto) => {
+    if (!confirm(`¿Eliminar el producto “${p.nombre}” (#${p.id})?`)) return;
+    const res = await fetch(`/api/admin/productos/${p.id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      alert(e?.error ?? "No se pudo eliminar.");
+      return;
+    }
+    await load();
+    alert("Producto eliminado.");
+  };
+
+  const exportListPDF = () => {
+    const doc = new jsPDF();
+    const body: RowInput[] = rows.map((p) => [
+      p.id,
+      p.nombre,
+      p.categoria?.nombre ?? "-",
+      p.publicado ? "Activo" : "Inactivo",
+      fmtDate(p.actualizadoEn),
+    ]);
+    doc.text("Productos - BESO", 14, 14);
+    autoTable(doc, {
+      startY: 20,
+      head: [["ID", "Nombre", "Categoría", "Estado", "Actualizado"]],
+      body,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [178, 76, 90] },
+      columnStyles: {
+        0: { cellWidth: 14 },
+        1: { cellWidth: 70 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 26 },
+        4: { cellWidth: 38 },
+      },
+    });
+    doc.save("productos.pdf");
+    alert("PDF generado.");
   };
 
   const openEdit = (p: Producto) => {
-    setEditing(p);
     setForm({
-      nombre: p.nombre ?? "",
+      id: p.id,
+      nombre: p.nombre,
       descripcion: p.descripcion ?? "",
-      precio: String(toNumber(p.precio)),
+      idCategoria: p.categoria?.id ? String(p.categoria.id) : "",
       imagenUrl: p.imagenUrl ?? "",
-      idCategoria: p.categoriaId ? String(p.categoriaId) : "",
+      publicado: p.publicado,
     });
-    setOpenModal(true);
+    setEditOpen(true);
   };
 
-  const closeModal = () => setOpenModal(false);
-
-  const onSubmit = async (e: React.FormEvent) => {
+  const submitEdit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.id == null) return;
 
-    if (!form.nombre.trim()) {
-      alert("El nombre es requerido.");
-      return;
-    }
-    const precioNum =
-      form.precio.trim() === "" ? null : Number(form.precio.trim());
-    if (precioNum === null || Number.isNaN(precioNum) || precioNum < 0) {
-      alert("Precio inválido.");
-      return;
-    }
-
-    const payload = {
+    const payload: {
+      nombre?: string;
+      descripcion?: string | null;
+      imagenUrl?: string | null;
+      idCategoria?: number | null;
+      publicado?: boolean;
+    } = {
       nombre: form.nombre.trim(),
       descripcion: form.descripcion.trim() ? form.descripcion.trim() : null,
-      precio: precioNum,
       imagenUrl: form.imagenUrl.trim() ? form.imagenUrl.trim() : null,
-      idCategoria: form.idCategoria ? Number(form.idCategoria) : undefined,
-      // NO enviar stock/talla/color: se sincronizan desde producto_variantes por triggers/SP
+      publicado: form.publicado,
     };
 
-    const url = editing
-      ? `/api/admin/productos/${editing.id}`
-      : `/api/admin/productos`;
-    const method = editing ? "PUT" : "POST";
+    if (form.idCategoria === "") {
+      payload.idCategoria = null;
+    } else {
+      const n = Number(form.idCategoria);
+      if (Number.isFinite(n)) payload.idCategoria = n;
+    }
 
-    const res = await fetch(url, {
-      method,
+    const res = await fetch(`/api/admin/productos/${form.id}`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert(err?.error ?? "Error al guardar producto");
+      const ejson = await res.json().catch(() => ({}));
+      alert(ejson?.error ?? "No se pudo guardar.");
       return;
     }
 
-    alert(editing ? "Producto actualizado." : "Producto creado.");
-    setOpenModal(false);
-    await fetchProductos();
+    setEditOpen(false);
+    await load();
+    alert("Producto actualizado.");
   };
-
-  /* ===== Eliminar ===== */
-  const onDelete = async (p: Producto) => {
-    if (!confirm(`Eliminar el producto "${p.nombre}"?`)) return;
-    const res = await fetch(`/api/admin/productos/${p.id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert(err?.error ?? "Error al eliminar");
-      return;
-    }
-    await fetchProductos();
-    alert("Producto eliminado.");
-  };
-
-  /* ===== Exportar PDF (lista) ===== */
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    const body: RowInput[] = items.map((p) => [
-      p.id,
-      p.nombre,
-      p.categoria?.nombre ?? "—",
-      typeof p.stock === "number" ? p.stock : p.stock ?? 0,
-      `Q ${toNumber(p.precio).toFixed(2)}`,
-    ]);
-    doc.text("Productos - BESO", 14, 14);
-    autoTable(doc, {
-      startY: 20,
-      head: [["ID", "Nombre", "Categoría", "Stock", "Precio"]],
-      body,
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [178, 76, 90] },
-      columnStyles: {
-        0: { cellWidth: 16 },
-        1: { cellWidth: 70 },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 20 },
-        4: { cellWidth: 30 },
-      },
-    });
-    doc.save("productos.pdf");
-    alert("PDF de productos generado.");
-  };
-
-  /* ===== Exportar PDF individual ===== */
-  const exportProductPDF = (p: Producto) => {
-    const doc = new jsPDF();
-    const rows: RowInput[] = [
-      ["ID", String(p.id)],
-      ["Nombre", p.nombre ?? "—"],
-      ["Descripción", p.descripcion ?? "—"],
-      ["Categoría", p.categoria?.nombre ?? "—"],
-      ["Stock", String(typeof p.stock === "number" ? p.stock : p.stock ?? 0)],
-      ["Precio", `Q ${toNumber(p.precio).toFixed(2)}`],
-      ["Tallas", p.talla ?? "—"],
-      ["Color", p.color ?? "—"],
-      ["Imagen URL", p.imagenUrl ?? "—"],
-    ];
-    doc.text(`Producto #${p.id}`, 14, 14);
-    autoTable(doc, {
-      startY: 26,
-      theme: "grid",
-      head: [["Campo", "Valor"]],
-      body: rows,
-      styles: { fontSize: 10, cellPadding: 3 },
-      headStyles: { fillColor: [178, 76, 90] },
-      columnStyles: { 0: { cellWidth: 55 }, 1: { cellWidth: 125 } },
-    });
-    doc.save(`producto_${p.id}.pdf`);
-    alert(`PDF del producto #${p.id} generado.`);
-  };
-
-  /* ===== Paginación cliente ===== */
-  const count = items.length;
-  const totalPages = Math.max(1, Math.ceil(count / pageSize));
-  const pageSafe = Math.min(page, totalPages);
-  const startIndex = (pageSafe - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, count);
-
-  const pagedItems = useMemo(
-    () => items.slice(startIndex, endIndex),
-    [items, startIndex, endIndex]
-  );
-
-  useEffect(() => {
-    setPage(1);
-  }, [pageSize]);
 
   return (
     <section className="w-full">
       <h1 className="text-2xl font-bold mb-4">Productos</h1>
 
-      {/* Barra superior: filtros plegables y acciones */}
+      {/* Barra superior */}
       <div className="panel p-4 mb-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               className="btn ghost"
               onClick={() => setFiltersOpen((v) => !v)}
@@ -351,12 +377,9 @@ export default function ProductosPage() {
               className="icon-btn"
               title="Exportar PDF"
               aria-label="Exportar PDF"
-              onClick={exportPDF}
+              onClick={exportListPDF}
             >
               <PdfIcon />
-            </button>
-            <button className="btn btn--primary" onClick={openCreate}>
-              Nuevo producto
             </button>
           </div>
         </div>
@@ -365,64 +388,54 @@ export default function ProductosPage() {
           <div className="flex flex-wrap items-center gap-2 mt-3">
             <input
               className="input"
-              placeholder="Buscar por nombre, descripción o color…"
+              placeholder="Buscar por nombre o descripción…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              style={{ minWidth: 240 }}
+              style={{ minWidth: 260 }}
             />
+
+            <span className="muted">Estado:</span>
             <select
               className="input"
-              value={categoria}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setCategoria(e.target.value)
-              }
+              value={status}
+              onChange={(e) => setStatus(e.target.value as Status)}
             >
-              <option value="">Todas las categorías</option>
-              {cats.map((c) => (
-                <option key={c.id} value={String(c.id)}>
-                  {c.nombre}
-                </option>
-              ))}
+              <option value="todos">Todos</option>
+              <option value="activos">Activos</option>
+              <option value="inactivos">Inactivos</option>
             </select>
 
             <span className="muted">Orden:</span>
             <select
               className="input"
               value={order}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setOrder(e.target.value as OrderField)
-              }
-              style={{ width: 120 }}
+              onChange={(e) => setOrder(e.target.value as OrderField)}
+              style={{ width: 160 }}
             >
-              <option value="id">ID</option>
+              <option value="creado">Más recientes</option>
+              <option value="actualizado">Actualizados</option>
               <option value="nombre">Nombre</option>
-              <option value="precio">Precio</option>
             </select>
             <select
               className="input"
               value={dir}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setDir(e.target.value as Dir)
-              }
+              onChange={(e) => setDir(e.target.value as Dir)}
               style={{ width: 110 }}
             >
-              <option value="asc">Asc</option>
               <option value="desc">Desc</option>
+              <option value="asc">Asc</option>
             </select>
 
-            <button className="btn" onClick={fetchProductos} disabled={loading}>
+            <button className="btn" onClick={load} disabled={loading}>
               Filtrar
             </button>
 
-            {/* Page size arriba */}
             <div className="flex items-center gap-2 ml-auto">
               <span className="muted">Ver:</span>
               <select
                 className="input"
                 value={pageSize}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setPageSize(Number(e.target.value))
-                }
+                onChange={(e) => setPageSize(Number(e.target.value))}
                 style={{ width: 90 }}
               >
                 <option value={5}>5</option>
@@ -435,39 +448,67 @@ export default function ProductosPage() {
         )}
       </div>
 
-      {/* Tabla */}
+      {/* Tabla compacta */}
       <div className="panel p-0 overflow-hidden">
         <table className="table">
           <thead>
             <tr>
-              <th style={{ width: 70 }}>ID</th>
-              <th>Producto</th>
+              <th style={{ width: 64 }}>ID</th>
+              <th style={{ width: 72 }}>Imagen</th>
+              <th>Nombre</th>
               <th>Categoría</th>
-              <th style={{ width: 80 }}>Stock</th>
-              <th style={{ width: 110 }}>Precio</th>
-              <th style={{ width: 140 }} />
+              <th style={{ width: 170, textAlign: "center" }}>
+                <span
+                  title="Habilita/oculta la ficha en la web"
+                  className="inline-block font-semibold"
+                >
+                  Publicado
+                </span>
+              </th>
+              <th style={{ width: 180 }} />
             </tr>
           </thead>
           <tbody>
-            {pagedItems.map((p) => (
+            {pageRows.map((p) => (
               <tr key={p.id}>
                 <td>{p.id}</td>
                 <td>
-                  <div className="font-medium">{p.nombre}</div>
-                  <div className="muted text-sm">
-                    {p.descripcion ? p.descripcion : "—"}
+                  <img
+                    src={firstImage(p)}
+                    alt={p.nombre}
+                    style={{
+                      width: 56,
+                      height: 56,
+                      objectFit: "cover",
+                      borderRadius: 8,
+                    }}
+                  />
+                </td>
+                <td>{p.nombre}</td>
+                <td>{p.categoria?.nombre ?? "-"}</td>
+                <td className="text-center">
+                  <div className="inline-flex items-center">
+                    <StatusDot
+                      active={p.publicado}
+                      title={p.publicado ? "Activo" : "Inactivo"}
+                    />
+                    <button
+                      className="icon-btn"
+                      title={p.publicado ? "Despublicar" : "Publicar"}
+                      onClick={() => void togglePublicado(p)}
+                      aria-label={p.publicado ? "Despublicar" : "Publicar"}
+                    >
+                      {p.publicado ? <ToggleOn /> : <ToggleOff />}
+                    </button>
                   </div>
                 </td>
-                <td>{p.categoria?.nombre ?? "—"}</td>
-                <td>{typeof p.stock === "number" ? p.stock : p.stock ?? 0}</td>
-                <td>Q {toNumber(p.precio).toFixed(2)}</td>
                 <td className="text-right whitespace-nowrap">
                   <button
                     className="icon-btn"
                     title="Ver"
                     onClick={() => setViewing(p)}
                   >
-                    <ViewIcon />
+                    <EyeIcon />
                   </button>
                   <button
                     className="icon-btn"
@@ -479,14 +520,14 @@ export default function ProductosPage() {
                   <button
                     className="icon-btn danger"
                     title="Eliminar"
-                    onClick={() => onDelete(p)}
+                    onClick={() => void onDelete(p)}
                   >
                     <TrashIcon />
                   </button>
                 </td>
               </tr>
             ))}
-            {pagedItems.length === 0 && (
+            {pageRows.length === 0 && (
               <tr>
                 <td colSpan={6} className="muted text-center p-4">
                   Sin resultados
@@ -497,28 +538,26 @@ export default function ProductosPage() {
         </table>
       </div>
 
-      {/* Paginación inferior */}
-      <div className="panel p-3 mt-3 flex items-center justify-between gap-3">
+      {/* Paginación */}
+      <div className="panel p-3 mt-3 flex items-center justify-between">
         <div className="muted">
-          Mostrando {count ? startIndex + 1 : 0}-{endIndex} de {count}
+          Mostrando {count ? start + 1 : 0}-{end} de {count}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <button
             className="btn"
-            disabled={pageSafe <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={pageSafe <= 1}
           >
             « Anterior
           </button>
-        </div>
-        <div className="muted">
-          Página {pageSafe} / {totalPages}
-        </div>
-        <div className="flex gap-2">
+          <div className="muted">
+            Página {pageSafe} / {totalPages}
+          </div>
           <button
             className="btn"
-            disabled={pageSafe >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={pageSafe >= totalPages}
           >
             Siguiente »
           </button>
@@ -548,26 +587,16 @@ export default function ProductosPage() {
               margin: "5% auto",
               padding: 20,
               borderRadius: 8,
-              width: "min(620px, 92%)",
+              width: "min(720px, 96%)",
               boxShadow: "0 10px 40px rgba(0,0,0,.35)",
             }}
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold">Detalle de producto</h3>
-              <div className="flex items-center gap-2">
-                <button
-                  className="icon-btn"
-                  title="Exportar PDF"
-                  onClick={() => exportProductPDF(viewing)}
-                >
-                  <PdfIcon />
-                </button>
-                <button className="icon-btn" onClick={() => setViewing(null)}>
-                  <CloseIcon />
-                </button>
-              </div>
+              <button className="icon-btn" onClick={() => setViewing(null)}>
+                <CloseIcon />
+              </button>
             </div>
-
             <div className="grid gap-2">
               <div>
                 <b>ID:</b> {viewing.id}
@@ -576,53 +605,30 @@ export default function ProductosPage() {
                 <b>Nombre:</b> {viewing.nombre}
               </div>
               <div>
-                <b>Descripción:</b> {viewing.descripcion ?? "—"}
+                <b>Categoría:</b> {viewing.categoria?.nombre ?? "-"}
               </div>
               <div>
-                <b>Categoría:</b> {viewing.categoria?.nombre ?? "—"}
+                <b>Publicado:</b> {viewing.publicado ? "Sí" : "No"}
               </div>
               <div>
-                <b>Stock:</b>{" "}
-                {typeof viewing.stock === "number"
-                  ? viewing.stock
-                  : viewing.stock ?? 0}
+                <b>Publicado en:</b> {fmtDate(viewing.publicadoEn)}
               </div>
               <div>
-                <b>Precio:</b> Q {toNumber(viewing.precio).toFixed(2)}
+                <b>Creado:</b> {fmtDate(viewing.creadoEn)}
               </div>
               <div>
-                <b>Tallas:</b> {viewing.talla ?? "—"}
+                <b>Actualizado:</b> {fmtDate(viewing.actualizadoEn)}
               </div>
-              <div>
-                <b>Color:</b> {viewing.color ?? "—"}
-              </div>
-              <div>
-                <b>Imagen URL:</b>{" "}
-                {viewing.imagenUrl ? (
-                  <a
-                    href={viewing.imagenUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="link"
-                  >
-                    {viewing.imagenUrl}
-                  </a>
-                ) : (
-                  "—"
-                )}
-              </div>
-              {viewing.imagenUrl && (
+              {firstImage(viewing) && (
                 <div style={{ marginTop: 8 }}>
                   <img
-                    src={viewing.imagenUrl}
+                    src={firstImage(viewing)}
                     alt={viewing.nombre}
                     style={{
-                      maxWidth: "100px",
-                      maxHeight: "100px",
-                      borderRadius: 8,
+                      maxWidth: 240,
+                      maxHeight: 240,
                       objectFit: "cover",
-                      display: "block",
-                      marginTop: "8px",
+                      borderRadius: 10,
                     }}
                   />
                 </div>
@@ -632,18 +638,16 @@ export default function ProductosPage() {
         </div>
       )}
 
-      {/* Drawer Crear/Editar */}
-      {openModal && (
+      {/* Drawer editar */}
+      {editOpen && (
         <div
           className="admin-right-drawer-root"
           role="dialog"
           aria-modal="true"
-          aria-label={editing ? "Editar producto" : "Nuevo producto"}
+          onClick={() => setEditOpen(false)}
           style={{ position: "fixed", inset: 0, zIndex: 1000 }}
-          onClick={closeModal}
         >
           <div
-            className="admin-right-drawer-backdrop"
             style={{
               position: "absolute",
               inset: 0,
@@ -653,8 +657,8 @@ export default function ProductosPage() {
           />
           <div
             className="admin-right-drawer-panel"
-            role="document"
             onClick={(e) => e.stopPropagation()}
+            role="document"
             style={{
               position: "absolute",
               right: 0,
@@ -665,29 +669,26 @@ export default function ProductosPage() {
               color: "var(--ink)",
               borderLeft: "1px solid var(--stroke)",
               padding: 16,
+              overflow: "auto",
               display: "grid",
               gridTemplateRows: "auto 1fr",
-              boxShadow: "0 10px 40px rgba(0,0,0,.35)",
-              overflow: "auto",
             }}
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-bold">
-                {editing ? "Editar producto" : "Nuevo producto"}
-              </h3>
-              <button className="btn" onClick={closeModal}>
+              <h3 className="font-bold">Editar producto</h3>
+              <button className="btn ghost" onClick={() => setEditOpen(false)}>
                 Cerrar
               </button>
             </div>
 
-            <form onSubmit={onSubmit} className="grid gap-3">
+            <form className="grid gap-3" onSubmit={submitEdit}>
               <label className="grid gap-1">
                 <span>Nombre</span>
                 <input
                   className="input"
                   value={form.nombre}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, nombre: e.target.value }))
+                    setForm((s) => ({ ...s, nombre: e.target.value }))
                   }
                   required
                 />
@@ -697,11 +698,11 @@ export default function ProductosPage() {
                 <span>Descripción</span>
                 <textarea
                   className="input"
+                  rows={3}
                   value={form.descripcion}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, descripcion: e.target.value }))
+                    setForm((s) => ({ ...s, descripcion: e.target.value }))
                   }
-                  rows={3}
                 />
               </label>
 
@@ -710,124 +711,65 @@ export default function ProductosPage() {
                 style={{ gridTemplateColumns: "1fr 1fr" }}
               >
                 <label className="grid gap-1">
-                  <span>Precio (Q)</span>
-                  <input
+                  <span>Categoría</span>
+                  <select
                     className="input"
-                    inputMode="decimal"
-                    pattern="^[0-9]+(\.[0-9]{1,2})?$"
-                    placeholder="0.00"
-                    value={form.precio}
+                    value={form.idCategoria}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, precio: e.target.value }))
+                      setForm((s) => ({ ...s, idCategoria: e.target.value }))
                     }
-                    required
-                    title="Solo números y hasta 2 decimales"
-                  />
+                  >
+                    <option value="">—</option>
+                    {categorias.map((c) => (
+                      <option key={c.id} value={String(c.id)}>
+                        {c.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <label className="grid gap-1">
-                  <span>Imagen URL</span>
-                  <input
-                    className="input"
-                    type="url"
-                    value={form.imagenUrl}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, imagenUrl: e.target.value }))
-                    }
-                    placeholder="https://bucket.s3.amazonaws.com/imagen.jpg"
-                  />
+                  <span>Publicado</span>
+                  <div className="flex items-center gap-2">
+                    <StatusDot active={form.publicado} />
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      onClick={() =>
+                        setForm((s) => ({ ...s, publicado: !s.publicado }))
+                      }
+                      aria-label={form.publicado ? "Despublicar" : "Publicar"}
+                      title={form.publicado ? "Despublicar" : "Publicar"}
+                    >
+                      {form.publicado ? <ToggleOn /> : <ToggleOff />}
+                    </button>
+                  </div>
                 </label>
               </div>
 
               <label className="grid gap-1">
-                <span>Categoría</span>
-                <select
+                <span>Imagen (URL)</span>
+                <input
                   className="input"
-                  value={form.idCategoria}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setForm((f) => ({ ...f, idCategoria: e.target.value }))
+                  type="url"
+                  value={form.imagenUrl}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, imagenUrl: e.target.value }))
                   }
-                >
-                  <option value="">Sin categoría</option>
-                  {cats.map((c) => (
-                    <option key={c.id} value={String(c.id)}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="https://…"
+                />
               </label>
-
-              {/* Derivados + Shortcuts (solo al editar, para que al crear no confunda) */}
-              {editing && (
-                <div
-                  className="grid gap-2 p-3 rounded-md"
-                  style={{ background: "var(--soft)" }}
-                >
-                  <div className="muted text-sm">
-                    Valores derivados (solo lectura):
-                  </div>
-
-                  <div
-                    className="grid"
-                    style={{ gridTemplateColumns: "130px 1fr" }}
-                  >
-                    <span className="muted">Stock total</span>
-                    <span>
-                      {typeof editing.stock === "number"
-                        ? editing.stock
-                        : editing.stock ?? 0}
-                    </span>
-                  </div>
-
-                  <div
-                    className="grid"
-                    style={{ gridTemplateColumns: "130px 1fr" }}
-                  >
-                    <span className="muted">Tallas</span>
-                    <span>{editing.talla ?? "—"}</span>
-                  </div>
-
-                  <div
-                    className="grid"
-                    style={{ gridTemplateColumns: "130px 1fr" }}
-                  >
-                    <span className="muted">Colores</span>
-                    <span>{editing.color ?? "—"}</span>
-                  </div>
-
-                  <div className="flex gap-8 mt-2">
-                    <a
-                      className="link"
-                      href={`/admin/variantes?producto=${editing.id}`}
-                    >
-                      Gestionar Variantes
-                    </a>
-                    <a
-                      className="link"
-                      href={`/admin/imagenes-productos?producto=${editing.id}`}
-                    >
-                      Imágenes
-                    </a>
-                    <a
-                      className="link"
-                      href={`/admin/clasificacion-abc?producto=${editing.id}`}
-                    >
-                      Clasificación ABC
-                    </a>
-                  </div>
-                </div>
-              )}
 
               <div className="flex justify-end gap-2 mt-2">
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={closeModal}
+                  onClick={() => setEditOpen(false)}
                 >
                   Cancelar
                 </button>
                 <button type="submit" className="btn btn--primary">
-                  {editing ? "Guardar cambios" : "Crear producto"}
+                  Guardar cambios
                 </button>
               </div>
             </form>
